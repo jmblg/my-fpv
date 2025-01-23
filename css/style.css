@@ -1,0 +1,26 @@
+@import 'node_modules/bulma/css/bulma.min.css';
+
+h5 {
+    padding: 0px;
+    margin: 0px;
+}
+
+canvas {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 0;
+}
+
+.myFpv-entities-window-group {
+    margin: 1vw 0px;
+    padding: 0.5vw;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0,0,0,0.15);
+}
+
+.myFpv-entities-window-group .fixed-grid {
+    margin: 0px;
+    padding: 0px;
+}
