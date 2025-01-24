@@ -2,24 +2,28 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three-stdlib'; // Utiliser three-stdlib pour OrbitControls
 
 class Entity {
-    static id = 1;
+    static id = 0;
 
-    constructor(type, sizeT, positionT, color, animated) {
+    constructor(type, sizeT, positionT, color, opacity, animated) {
         this.id = Entity.id;
+        this.name = type;
    
         this.type = null;
+        this.positionInitial = positionT;
         this.geometry = null;
         this.material = null;
         this.mesh = null;
         this.color = null;
         this.animated = null;
 
-        this.update(type, sizeT, positionT, color, animated);
+        this.group = 0;
+
+        this.update(type, sizeT, positionT, color, opacity, animated);
 
         Entity.id++;
     }
 
-    changeColor(color) {
+    changeColor(color, opacity) {
         if (color == null) {
             let newColorRgbt = colorgen("fluo");
             color = rgbToHex(newColorRgbt);
@@ -31,11 +35,15 @@ class Entity {
         let b = parseInt(hex.slice(4, 6), 16) / 255;
 
         let newColor = new THREE.Color(r, g, b);
-        this.material = new THREE.MeshBasicMaterial({ color: newColor });
+        this.material = new THREE.MeshBasicMaterial({
+            color: newColor,
+            transparent: true,
+            opacity: opacity // Ajuste ce nombre pour régler le niveau de transparence
+        });
         this.mesh.material = this.material;
     }
 
-    update(type, sizeT, positionT, color, animated) {
+    update(type, sizeT, positionT, color, opacity, animated) {
         this.type = type;
     
         // Vérifier si la géométrie doit être mise à jour
@@ -78,12 +86,56 @@ class Entity {
     
         // Mise à jour de la couleur
         this.color = color;
-        this.changeColor(this.color);
+        this.changeColor(this.color, opacity);
     
         // Mise à jour de l'animation
         this.animated = animated;
+        if (this.animated == false) {
+            this.mesh.rotation.x = 0;
+            this.mesh.rotation.y = 0;
+        }
     }
+
+    setName(txt) {
+        this.name = txt;
+    }
+
+    setGroup(id_group) {
+        this.group = id_group;
+    }
+
+    destroy() {
+        if (this.mesh) {
+            scene.remove(this.mesh);
+            this.mesh = null;
+        }
     
+        if (this.geometry) {
+            this.geometry.dispose();
+            this.geometry = null;
+        }
+        
+        if (this.material) {
+            this.material.dispose();
+            this.material = null;
+        }
+    
+        this.type = null;
+        this.color = null;
+        this.animated = null;
+    }    
+    
+}
+
+class Group {
+    static id = 1;
+
+    constructor(name) {
+        this.id = Group.id;
+        this.name = name;
+
+        Group.id++;
+    }
 }
 
 const scene = new THREE.Scene();
@@ -108,6 +160,10 @@ scene.add(plane);
 
 // entities
 let entietiesT = new Array();
+let entityToAdd = null;
+
+// groupes
+let groupsT = new Array();
 
 // light
 const light = new THREE.AmbientLight(0x404040, 5); // Lumière ambiante pour éclairer la scène
@@ -118,6 +174,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 function animate() {
   requestAnimationFrame(animate);
+
+  myFpv_toAddAnEntity();
 
   entietiesT.forEach((entity) => {
     if (entity.animated == true) {
@@ -142,26 +200,23 @@ window.addEventListener('resize', () => {
 });
 
 
-////
+//////////////////
+
+function myFpv_toAddAnEntity() {
+    let t = myFpv_prepareAnEntity();
+    t.opacity = 0.25;
+
+    if (!entityToAdd) {
+        entityToAdd = new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+    } else {
+        entityToAdd.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+    }
+}
 
 function myFpv_addAnEntity() {
-    let type = document.getElementById("myFpv_addAnEntity_type").value;
+    let t = myFpv_prepareAnEntity();
 
-    let sizeT = new Array();
-    sizeT[0] = document.getElementById("myFpv_addAnEntity_sizeX").value;
-    sizeT[1] = document.getElementById("myFpv_addAnEntity_sizeY").value;
-    sizeT[2] = document.getElementById("myFpv_addAnEntity_sizeZ").value;
-
-    let positionT = new Array();
-    positionT[0] = document.getElementById("myFpv_addAnEntity_positionX").value;
-    positionT[1] = document.getElementById("myFpv_addAnEntity_positionY").value;
-    positionT[2] = document.getElementById("myFpv_addAnEntity_positionZ").value;
-
-    let color = document.getElementById("myFpv_addAnEntity_color").value;
-
-    let animated = false; if (document.getElementById("myFpv_addAnEntity_animated").checked) { animated = true; }
-
-    entietiesT.push(new Entity(type, sizeT, positionT, color, animated));
+    entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated));
 
     myFpv_entities_all_select();
 
@@ -170,7 +225,31 @@ function myFpv_addAnEntity() {
 
 function myFpv_updateAnEntity() {
     let id = document.getElementById("myFpv_entities_all_select").value;
-    
+
+    let t = myFpv_prepareAnEntity();
+
+    let entityO = entietiesT.find(o => o.id.toString() === id.toString());
+    entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+}
+
+function myFpv_deleteAnEntityBtn() {
+    let id = document.getElementById("myFpv_entities_all_select").value;
+    let index = entietiesT.findIndex(o => o.id.toString() === id.toString());
+
+    let entityO = entietiesT[index];
+
+    // détruire dans le tableau
+    entietiesT.splice(index, 1);
+
+    // détruire en tant qu'objet
+    entityO.destroy();
+
+    myFpv_entities_all_select();
+}
+
+function myFpv_prepareAnEntity() {
+    let t = new Array();
+
     let type = document.getElementById("myFpv_addAnEntity_type").value;
 
     let sizeT = new Array();
@@ -184,29 +263,62 @@ function myFpv_updateAnEntity() {
     positionT[2] = document.getElementById("myFpv_addAnEntity_positionZ").value;
 
     let color = document.getElementById("myFpv_addAnEntity_color").value;
+    let opacity = 1;
 
     let animated = false; if (document.getElementById("myFpv_addAnEntity_animated").checked) { animated = true; }
 
-    let entityO = entietiesT.find(o => o.id.toString() === id.toString());
-    entityO.update(type, sizeT, positionT, color, animated);
+    t.type = type;
+    t.sizeT = sizeT;
+    t.positionT = positionT;
+    t.color = color;
+    t.opacity = opacity;
+    t.animated = animated;
+
+    return t;
 }
 
 function myFpv_entities_all_select() {
     let html = "";
-    entietiesT.forEach((entity, index, array) => {
-        let select = ""; if (index === array.length - 1) { select = " selected"; }
-        html += "<option value='" + entity.id + "'" + select + ">" + entity.id + " - " + entity.type + " (" + entity.color + ")</option>";
+    if (entietiesT.length > 0) {
+        entietiesT.forEach((entity, index, array) => {
+            let select = ""; if (index === array.length - 1) { select = " selected"; }
+            html += "<option value='" + entity.id + "'" + select + ">" + entity.id + " - " + entity.name + " (" + entity.color + ")</option>";
+        });
+        document.querySelectorAll(".myFpv-entities-select").forEach(element => {
+            element.disabled = false;
+          });
+        document.getElementById("myFpv_renameEntity").disabled = false;
+        document.getElementById("myFpv_renameEntityBtn").disabled = false;
+        document.getElementById("myFpv-group-entities-all-btn").disabled = false;
+    } else {
+        document.querySelectorAll(".myFpv-entities-select").forEach(element => {
+            element.disabled = true;
+          });
+        document.getElementById("myFpv_renameEntity").disabled = true;
+        document.getElementById("myFpv_renameEntityBtn").disabled = true;
+        document.getElementById("myFpv-group-entities-all-btn").disabled = true;
+    }
+    document.querySelectorAll(".myFpv-entities-select").forEach(element => {
+        element.innerHTML = html;
       });
-    document.getElementById("myFpv_entities_all_select").innerHTML = html;
 }
 
-function colorgen(type)
-	{
+function myFpv_groups_all_select() {
+    let html = "";
+    if (groupsT.length > 0) {
+        groupsT.forEach(element => {
+        html += `<div id="myFpv-groups-group-block-id-${element.id}" class="myFpv-groups-group-block">${element.name}</div>`;
+      });
+    }
+    document.getElementById("myFpv-groups-all").innerHTML = html;
+}
+
+function colorgen(type)	{
     let rgbt = new Array();
 	switch (type)
 		{
 		case "dark" :
-            rgbt[0] =nbralet(0,200); rgbt[1] = nbralet(0,200); rgbt[2] = nbralet(0,200);
+            rgbt[0] = nbralet(0,200); rgbt[1] = nbralet(0,200); rgbt[2] = nbralet(0,200);
 		break;
 		case "fluo" :
 			let the255 = nbralet(0,3);
@@ -253,10 +365,59 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
 });
 
+document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
+    document.getElementById("myFpv_renameEntity").value = "";
+});
+
+document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", function() {
+    let name = document.getElementById("myFpv_renameEntity").value;
+    let id = document.getElementById("myFpv_entities_all_select").value;
+    let entityO = entietiesT.find(o => o.id.toString() === id.toString());
+    entityO.setName(name);
+
+    myFpv_entities_all_select();
+});
+
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
     myFpv_addAnEntity();
 });
 
 document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", function() {
     myFpv_updateAnEntity();
+});
+
+document.querySelector("#myFpv_deleteAnEntityBtn").addEventListener("click", function() {
+    myFpv_deleteAnEntityBtn();
+});
+
+document.querySelector("#myFpv_groups_addBtn").addEventListener("click", function() {
+    let name = document.getElementById("myFpv_groups_add").value;
+
+    if (name != "") {
+        groupsT.push(new Group(name));
+
+        myFpv_groups_all_select();
+
+        document.getElementById("myFpv_groups_add").value = "";
+    }
+});
+
+document.getElementById("myFpv-groups-window").addEventListener("click", function(event) {
+    document.querySelectorAll(".myFpv-groups-group-block").forEach(element => {
+      element.addEventListener("click", function() {
+        let id = parseInt(this.id.replace("myFpv-groups-group-block-id-",""));
+        let groupO = groupsT.find(o => o.id.toString() === id.toString());
+
+        document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
+      });
+    });
+  });
+
+document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click", function() {
+    let id = document.getElementById("myFpv-group-entities-all").value;
+    let entityO = entietiesT.find(o => o.id.toString() === id.toString());
+
+    let html = document.getElementById("myFpv-group-entities-selections_list").innerHTML;
+    html += `<div class="myFpv-group-entities-selections_list-line">${entityO.id} - ${entityO.name} (${entityO.color})</div>`;
+    document.getElementById("myFpv-group-entities-selections_list").innerHTML = html;
 });

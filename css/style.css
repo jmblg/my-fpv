@@ -1,9 +1,16 @@
-@import 'node_modules/bulma/css/bulma.min.css';
+@import '../node_modules/bulma/css/bulma.min.css';
+@import '../node_modules/font-awesome/css/font-awesome.min.css';
 
 h5 {
     padding: 0px;
     margin: 0px;
+    margin-bottom: 1vh;
+    font-size: 20px;
 }
+
+select {
+    appearance: auto !important;
+  }
 
 canvas {
     position: fixed;
@@ -23,4 +30,29 @@ canvas {
 .myFpv-entities-window-group .fixed-grid {
     margin: 0px;
     padding: 0px;
+}
+
+.myFpv-groups-group-block {
+    display: inline-block;
+    text-align: center;
+    font-size: 16px;
+    margin: 0.25vw;
+    padding: 0.5vw;
+    border-radius: 0.25vw;
+    background-color: white;
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+}
+
+.myFpv-groups-group-block:hover {
+    transform: scale(1.1);
+}
+
+.myFpv-group-entities-selections_list-line {
+    padding: 0.25vh 1vw;
+    background-color: white;
+    border-style: solid;
+    border-width: 0px;
+    border-bottom-width: 1px;
+    border-color: rgba(0,0,0,0.15);
 }
