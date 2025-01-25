@@ -151,8 +151,16 @@ document.body.appendChild(renderer.domElement);
 renderer.setClearColor(0x87CEEB); // sky
 
 // ground
-const planeGeometry = new THREE.PlaneGeometry(500, 500);
-const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
+const planeGeometry = new THREE.PlaneGeometry(250, 250);
+const planeTextureLoader = new THREE.TextureLoader();
+const planeTexture = planeTextureLoader.load("img/200.png");
+planeTexture.wrapS = THREE.RepeatWrapping;
+planeTexture.wrapT = THREE.RepeatWrapping;
+planeTexture.repeat.set(250, 250);
+const planeMaterial = new THREE.MeshLambertMaterial({ 
+    map: planeTexture
+});
+// const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = - Math.PI / 2; // Rotation pour que le plan soit horizontal
 plane.position.set(1, 0.5, 1);
@@ -171,6 +179,8 @@ scene.add(light);
 
 // controls
 const controls = new OrbitControls(camera, renderer.domElement);
+let keysT = new Array();
+keysT.left = false; keysT.right = false; keysT.top = false; keysT.bottom = false;
 
 function animate() {
   requestAnimationFrame(animate);
@@ -183,6 +193,19 @@ function animate() {
         entity.mesh.rotation.y += 0.01;
     }
   });
+
+  if (keysT.right == true) {
+    camera.position.x += 0.1;
+  }
+  if (keysT.left == true) {
+    camera.position.x -= 0.1;
+  }
+  if (keysT.top == true) {
+    camera.position.z -= 0.1; camera.position.y -= 0.1;
+  }
+  if (keysT.bottom == true) {
+    camera.position.z += 0.1; camera.position.y += 0.1;
+  }
 
   controls.update();
 
@@ -348,6 +371,53 @@ function nbralet(min,max)
 	{
 	return Math.floor(Math.random() * max) + min;
 	}
+
+window.onkeyup = function(e) 	{
+        var key = e.keyCode || e.which;
+
+        switch (key)
+            {
+            case 37 :
+                keysT.left = false;
+            break;
+
+            case 39 :
+                keysT.right = false;
+            break;
+                
+            case 38 :
+                keysT.top = false;
+            break;
+            case 40 :
+                keysT.bottom = false;
+            break;
+            }
+        }
+
+window.onkeydown = function(e) {
+        var key = e.keyCode || e.which;
+
+        switch (key)
+            {
+            case 37:
+                keysT.left = true;
+            break;
+                
+            case 39:
+                keysT.right = true;
+            break;
+                    
+            case 38:
+                keysT.top = true;
+            break;
+                
+            case 40:
+                keysT.bottom = true;
+            break;
+    
+            }
+        console.log(camera.position.x + " " + camera.position.z)
+        }
 
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
     let entityO = entietiesT.find(o => o.id.toString() === this.value.toString());
