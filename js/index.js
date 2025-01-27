@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three-stdlib'; // Utiliser three-stdlib pour OrbitControls
+import { OrbitControls } from 'three-stdlib';
 
 class Entity {
     static id = 0;
@@ -194,18 +194,36 @@ function animate() {
     }
   });
 
-  if (keysT.right == true) {
-    camera.position.x += 0.1;
-  }
-  if (keysT.left == true) {
-    camera.position.x -= 0.1;
-  }
-  if (keysT.top == true) {
-    camera.position.z -= 0.1; camera.position.y -= 0.1;
-  }
-  if (keysT.bottom == true) {
-    camera.position.z += 0.1; camera.position.y += 0.1;
-  }
+    if (keysT.right == true) { 
+        let direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        let right = new THREE.Vector3(-direction.z, 0, direction.x); 
+        right.normalize();
+        camera.position.addScaledVector(right, 0.1);
+        controls.target.addScaledVector(right, 0.1);
+    }
+    if (keysT.left == true) {
+        let direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        let left = new THREE.Vector3(direction.z, 0, -direction.x);
+        left.normalize();
+        camera.position.addScaledVector(left, 0.1);
+        controls.target.addScaledVector(left, 0.1);
+    }
+    if (keysT.top == true) {
+        let direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        direction.normalize();
+        camera.position.addScaledVector(direction, 0.1);
+        controls.target.addScaledVector(direction, 0.1);
+    }
+    if (keysT.bottom == true) {
+        let direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        direction.normalize();
+        camera.position.addScaledVector(direction, -0.1);
+        controls.target.addScaledVector(direction, -0.1);
+    }
 
   controls.update();
 
@@ -321,9 +339,7 @@ function myFpv_entities_all_select() {
         document.getElementById("myFpv_renameEntityBtn").disabled = true;
         document.getElementById("myFpv-group-entities-all-btn").disabled = true;
     }
-    document.querySelectorAll(".myFpv-entities-select").forEach(element => {
-        element.innerHTML = html;
-      });
+    document.getElementById("#myFpv_entities_all_select").innerHTML = html;
 }
 
 function myFpv_groups_all_select() {
