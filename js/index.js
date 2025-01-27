@@ -548,3 +548,31 @@ document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click"
 
     myFpv_groups_entities_select(id_group);
 });
+
+document.querySelector("#myFpv-parameters-groundColor-btn").addEventListener("click", function() {
+    let color = document.getElementById("myFpv-parameters-groundColor").value;
+    let hex = color.replace('#', '');
+
+    let r = parseInt(hex.slice(0, 2), 16) / 255;
+    let g = parseInt(hex.slice(2, 4), 16) / 255;
+    let b = parseInt(hex.slice(4, 6), 16) / 255;
+
+    let newColor = new THREE.Color(r, g, b);
+
+    plane.material.map = null; // Remove texture
+    plane.material.color.set(newColor); // Set new color
+    plane.material.needsUpdate = true; // Ensure material updates
+});
+
+document.querySelector("#myFpv-parameters-skyColor-btn").addEventListener("click", function() {
+    let color = document.getElementById("myFpv-parameters-skyColor").value;
+    let hex = color.replace('#', '');
+
+    let r = parseInt(hex.slice(0, 2), 16) / 255;
+    let g = parseInt(hex.slice(2, 4), 16) / 255;
+    let b = parseInt(hex.slice(4, 6), 16) / 255;
+
+    let newColor = new THREE.Color(r, g, b);
+
+    renderer.setClearColor(newColor);
+});
