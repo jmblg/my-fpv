@@ -16,7 +16,7 @@ class Entity {
         this.color = null;
         this.animated = null;
 
-        this.group = 0;
+        this.id_group = 0;
 
         this.update(type, sizeT, positionT, color, opacity, animated);
 
@@ -101,7 +101,7 @@ class Entity {
     }
 
     setGroup(id_group) {
-        this.group = id_group;
+        this.id_group = id_group;
     }
 
     destroy() {
@@ -256,10 +256,11 @@ function myFpv_toAddAnEntity() {
 
 function myFpv_addAnEntity() {
     let t = myFpv_prepareAnEntity();
+    let id_group = document.getElementById("myFpv_groups_all_select").value;
 
     entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated));
 
-    myFpv_entities_all_select();
+    myFpv_groups_all_select_entities(id_group);
 
     scene.add(entietiesT[entietiesT.length-1].mesh);
 }
@@ -275,6 +276,8 @@ function myFpv_updateAnEntity() {
 
 function myFpv_deleteAnEntityBtn() {
     let id = document.getElementById("myFpv_entities_all_select").value;
+    let id_group = document.getElementById("myFpv_groups_all_select").value;
+
     let index = entietiesT.findIndex(o => o.id.toString() === id.toString());
 
     let entityO = entietiesT[index];
@@ -285,7 +288,7 @@ function myFpv_deleteAnEntityBtn() {
     // détruire en tant qu'objet
     entityO.destroy();
 
-    myFpv_entities_all_select();
+    myFpv_groups_all_select_entities(id_group);
 }
 
 function myFpv_prepareAnEntity() {
@@ -318,38 +321,61 @@ function myFpv_prepareAnEntity() {
     return t;
 }
 
-function myFpv_entities_all_select() {
+function myFpv_groups_all_select_entities(id) {
+    // afficher tous les objets du groupe concerné dans le select myFpv_entities_all_select
     let html = "";
+    let t = entietiesT.filter(entity => parseInt(entity.id_group) === parseInt(id));
+    t.forEach((entity, index, array) => {
+        let select = "";
+        if ((id == 0)&&(index === array.length - 1)) { select = " selected"; }
+        html += "<option value='" + entity.id + "'" + select + ">" + entity.id + " - " + entity.name + " (" + entity.color + ")</option>";
+    });
+    document.getElementById("myFpv_entities_all_select").innerHTML = html;
+
+    document.querySelectorAll(".myFpv-entities-select").forEach(element => {
+        element.disabled = true;
+      });
+    document.getElementById("myFpv_renameEntity").disabled = true;
+    document.getElementById("myFpv_renameEntityBtn").disabled = true;
+    document.getElementById("myFpv-group-entities-all-btn").disabled = true;
     if (entietiesT.length > 0) {
-        entietiesT.forEach((entity, index, array) => {
-            let select = ""; if (index === array.length - 1) { select = " selected"; }
-            html += "<option value='" + entity.id + "'" + select + ">" + entity.id + " - " + entity.name + " (" + entity.color + ")</option>";
-        });
         document.querySelectorAll(".myFpv-entities-select").forEach(element => {
             element.disabled = false;
-          });
+        });
         document.getElementById("myFpv_renameEntity").disabled = false;
         document.getElementById("myFpv_renameEntityBtn").disabled = false;
         document.getElementById("myFpv-group-entities-all-btn").disabled = false;
-    } else {
-        document.querySelectorAll(".myFpv-entities-select").forEach(element => {
-            element.disabled = true;
-          });
-        document.getElementById("myFpv_renameEntity").disabled = true;
-        document.getElementById("myFpv_renameEntityBtn").disabled = true;
-        document.getElementById("myFpv-group-entities-all-btn").disabled = true;
     }
-    document.getElementById("#myFpv_entities_all_select").innerHTML = html;
 }
 
 function myFpv_groups_all_select() {
-    let html = "";
-    if (groupsT.length > 0) {
-        groupsT.forEach(element => {
-        html += `<div id="myFpv-groups-group-block-id-${element.id}" class="myFpv-groups-group-block">${element.name}</div>`;
-      });
-    }
-    document.getElementById("myFpv-groups-all").innerHTML = html;
+    let htmlWindow = "";
+    let htmlSelect = `<option value="0">No group</option>`;
+    groupsT.forEach(element => {
+        htmlWindow += `<div id="myFpv-groups-group-block-id-${element.id}" class="myFpv-groups-group-block">${element.name}</div>`;
+        htmlSelect += `<option value="${element.id}">${element.name}</option>`;
+    });
+    document.getElementById("myFpv-groups-all").innerHTML = htmlWindow;
+    document.getElementById("myFpv_groups_all_select").innerHTML = htmlSelect;
+}
+
+function myFpv_groups_entities_select(id) {
+    let id_group = document.getElementById("myFpv_groups_all_select").value;
+
+    let htmlSelect = ""; let htmlEntitiesGroup = "";
+    entietiesT.forEach((entity) => {
+    if (entity.id_group == 0) {
+            htmlSelect += "<option value='" + entity.id + "'>" + entity.id + " - " + entity.name + " (" + entity.color + ")</option>";
+        }
+    else if (entity.id_group == id) {
+        htmlEntitiesGroup += `<div class="myFpv-group-entities-selections_list-line">${entity.id} - ${entity.name} (${entity.color})</div>`;
+        }
+    });
+    if (htmlSelect != "") { document.getElementById("myFpv-group-entities-all").disabled = false; }
+    document.getElementById("myFpv-group-entities-all").innerHTML = htmlSelect;
+    document.getElementById("myFpv-group-entities-selections_list").innerHTML = htmlEntitiesGroup;
+
+    myFpv_groups_all_select_entities(id_group);
 }
 
 function colorgen(type)	{
@@ -432,8 +458,11 @@ window.onkeydown = function(e) {
             break;
     
             }
-        console.log(camera.position.x + " " + camera.position.z)
         }
+
+window.onload = function(){
+    myFpv_groups_all_select();
+};
 
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
     let entityO = entietiesT.find(o => o.id.toString() === this.value.toString());
@@ -451,6 +480,10 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
 });
 
+document.querySelector("#myFpv_groups_all_select").addEventListener("change", function() {
+    myFpv_groups_all_select_entities(this.value);
+});
+
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
     document.getElementById("myFpv_renameEntity").value = "";
 });
@@ -458,10 +491,12 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
 document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", function() {
     let name = document.getElementById("myFpv_renameEntity").value;
     let id = document.getElementById("myFpv_entities_all_select").value;
+    let id_group = document.getElementById("myFpv_groups_all_select").value;
+
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
     entityO.setName(name);
 
-    myFpv_entities_all_select();
+    myFpv_groups_all_select_entities(id_group);
 });
 
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
@@ -494,6 +529,10 @@ document.getElementById("myFpv-groups-window").addEventListener("click", functio
         let id = parseInt(this.id.replace("myFpv-groups-group-block-id-",""));
         let groupO = groupsT.find(o => o.id.toString() === id.toString());
 
+        myFpv_groups_entities_select(groupO.id);
+
+        document.getElementById("myFpv-group-window-id").value = id;
+
         document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
       });
     });
@@ -501,9 +540,11 @@ document.getElementById("myFpv-groups-window").addEventListener("click", functio
 
 document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click", function() {
     let id = document.getElementById("myFpv-group-entities-all").value;
+    let id_group = document.getElementById("myFpv-group-window-id").value;
+
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
 
-    let html = document.getElementById("myFpv-group-entities-selections_list").innerHTML;
-    html += `<div class="myFpv-group-entities-selections_list-line">${entityO.id} - ${entityO.name} (${entityO.color})</div>`;
-    document.getElementById("myFpv-group-entities-selections_list").innerHTML = html;
+    entityO.setGroup(id_group);
+
+    myFpv_groups_entities_select(id_group);
 });
