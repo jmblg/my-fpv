@@ -18,6 +18,8 @@ class Entity {
 
         this.id_group = 0;
 
+        this.markerCube = null;
+
         this.update(type, sizeT, positionT, color, opacity, animated);
 
         Entity.id++;
@@ -28,25 +30,41 @@ class Entity {
             let newColorRgbt = colorgen("fluo");
             color = rgbToHex(newColorRgbt);
         }
-        let hex = color.replace('#', '');
 
-        let r = parseInt(hex.slice(0, 2), 16) / 255;
-        let g = parseInt(hex.slice(2, 4), 16) / 255;
-        let b = parseInt(hex.slice(4, 6), 16) / 255;
-
-        let newColor = new THREE.Color(r, g, b);
+        let newColor = colorThree(color);
+        
         this.material = new THREE.MeshBasicMaterial({
             color: newColor,
             transparent: true,
-            opacity: opacity // Ajuste ce nombre pour régler le niveau de transparence
+            opacity: opacity
         });
         this.mesh.material = this.material;
+    }
+
+    selected() {
+        if (this.markerCube == null) {
+            const markerGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });  // Vert
+            this.markerCube = new THREE.Mesh(markerGeometry, markerMaterial);
+            
+            this.markerCube.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + 1, this.mesh.position.z);
+            
+            scene.add(this.markerCube);
+        } else {
+            this.markerCube.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + 1, this.mesh.position.z);
+        }
+    }
+
+    unselected() {
+        scene.remove(this.markerCube);
+        this.markerCube.geometry.dispose();
+        this.markerCube.material.dispose();
+        this.markerCube = null;
     }
 
     update(type, sizeT, positionT, color, opacity, animated) {
         this.type = type;
     
-        // Vérifier si la géométrie doit être mise à jour
         if (type === "cube") {
             if (!this.geometry || !(this.geometry instanceof THREE.BoxGeometry)) {
                 this.geometry = new THREE.BoxGeometry(sizeT[0], sizeT[1], sizeT[2]);
@@ -55,7 +73,7 @@ class Entity {
                 this.geometry.parameters.height = sizeT[1];
                 this.geometry.parameters.depth = sizeT[2];
                 this.geometry.dispose(); // Libérer l'ancienne géométrie
-                this.geometry = new THREE.BoxGeometry(sizeT[0], sizeT[1], sizeT[2]); // Créer une nouvelle géométrie
+                this.geometry = new THREE.BoxGeometry(sizeT[0], sizeT[1], sizeT[2]);
             }
         } else if (type === "sphere") {
             if (!this.geometry || !(this.geometry instanceof THREE.SphereGeometry)) {
@@ -65,16 +83,15 @@ class Entity {
                 this.geometry.parameters.widthSegments = sizeT[1];
                 this.geometry.parameters.heightSegments = sizeT[2];
                 this.geometry.dispose(); // Libérer l'ancienne géométrie
-                this.geometry = new THREE.SphereGeometry(sizeT[0], sizeT[1], sizeT[2]); // Créer une nouvelle géométrie
+                this.geometry = new THREE.SphereGeometry(sizeT[0], sizeT[1], sizeT[2]);
             }
         }
     
-        // Vérifier si le mesh existe déjà
-        if (!this.mesh) {
+         if (!this.mesh) {
             // Si le mesh n'existe pas encore, on le crée
             this.material = new THREE.MeshBasicMaterial({ color: color || 0x00ff00 });
             this.mesh = new THREE.Mesh(this.geometry, this.material);
-            scene.add(this.mesh);  // Ajouter le mesh à la scène si nécessaire
+            scene.add(this.mesh);
         } else {
             // Si le mesh existe déjà, on met simplement à jour ses propriétés
             this.mesh.geometry = this.geometry;
@@ -168,13 +185,14 @@ scene.add(plane);
 
 // entities
 let entietiesT = new Array();
+let entity_lastSelection = null;
 let entityToAdd = null;
 
 // groupes
 let groupsT = new Array();
 
 // light
-const light = new THREE.AmbientLight(0x404040, 5); // Lumière ambiante pour éclairer la scène
+const light = new THREE.AmbientLight(0x888888, 5); // Lumière ambiante pour éclairer la scène
 scene.add(light);
 
 // controls
@@ -260,9 +278,16 @@ function myFpv_addAnEntity() {
 
     entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated));
 
+    // DERNIERE SELECTION !!! IL FAUT FINIR CA
+    if (entity_lastSelection == null) {
+        entity_lastSelection = entietiesT[entietiesT.length-1];
+    }
+
     myFpv_groups_all_select_entities(id_group);
 
     scene.add(entietiesT[entietiesT.length-1].mesh);
+
+    entietiesT[entietiesT.length-1].selected();
 }
 
 function myFpv_updateAnEntity() {
@@ -272,6 +297,8 @@ function myFpv_updateAnEntity() {
 
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
     entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+
+    entityO.selected();
 }
 
 function myFpv_deleteAnEntityBtn() {
@@ -409,6 +436,18 @@ function rgbToHex(rgbt) {
             b.toString(16).padStart(2, '0');
     }
 
+function colorThree(hex) {
+    hex = hex.replace('#', '');
+
+    let r = parseInt(hex.slice(0, 2), 16) / 255;
+    let g = parseInt(hex.slice(2, 4), 16) / 255;
+    let b = parseInt(hex.slice(4, 6), 16) / 255;
+
+    let newColor = new THREE.Color(r, g, b);
+
+    return newColor;
+}
+
 function nbralet(min,max)
 	{
 	return Math.floor(Math.random() * max) + min;
@@ -464,6 +503,36 @@ window.onload = function(){
     myFpv_groups_all_select();
 };
 
+document.querySelectorAll(".myFpv-close").forEach(element => {
+    element.addEventListener("click", function() {
+        let id = this.id.replace("-close","")
+        document.getElementById(id).style.display = "none";
+    });
+  });
+
+document.querySelector("#myFpv_menu-entities").addEventListener("mouseover", function() {
+    document.getElementById("myFpv_menu-entities-window").style.display = "inline";
+});
+
+document.querySelector("#myFpv_menu-entities-window").addEventListener("mouseleave", function() {
+    document.getElementById("myFpv_menu-entities-window").style.display = "none";
+});
+
+document.querySelector("#myFpv_menu-entities-window-entities_all").addEventListener("click", function() {
+    document.getElementById("myFpv-entities_all-window").style.display = "inline";
+});
+
+document.querySelector("#myFpv_menu-entities-window-manage_groups").addEventListener("click", function() {
+    document.getElementById("myFpv-groups-window").style.display = "inline";
+    document.getElementById("myFpv-parameters-window").style.display = "none";
+});
+
+document.querySelector("#myFpv_menu-parameters").addEventListener("click", function() {
+    document.getElementById("myFpv-parameters-window").style.display = "inline";
+    document.getElementById("myFpv-groups-window").style.display = "none";
+    document.getElementById("myFpv-group-window").style.display = "none";
+});
+
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
     let entityO = entietiesT.find(o => o.id.toString() === this.value.toString());
 
@@ -497,10 +566,22 @@ document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", funct
     entityO.setName(name);
 
     myFpv_groups_all_select_entities(id_group);
+
+    // rafraîchir éventuellement fenêtre myFpv-group-window (c'est mieux si elle est ouverte)
+    let refresh_idGroup_window = document.getElementById("myFpv-group-window-id").value;
+    if (refresh_idGroup_window != "") {
+        myFpv_groups_entities_select(refresh_idGroup_window);
+    }
 });
 
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
     myFpv_addAnEntity();
+
+    // rafraîchir éventuellement fenêtre myFpv-group-window (c'est mieux si elle est ouverte)
+    let refresh_idGroup_window = document.getElementById("myFpv-group-window-id").value;
+    if (refresh_idGroup_window != "") {
+        myFpv_groups_entities_select(refresh_idGroup_window);
+    }
 });
 
 document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", function() {
@@ -509,6 +590,12 @@ document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", fun
 
 document.querySelector("#myFpv_deleteAnEntityBtn").addEventListener("click", function() {
     myFpv_deleteAnEntityBtn();
+
+    // rafraîchir éventuellement fenêtre myFpv-group-window (c'est mieux si elle est ouverte)
+    let refresh_idGroup_window = document.getElementById("myFpv-group-window-id").value;
+    if (refresh_idGroup_window != "") {
+        myFpv_groups_entities_select(refresh_idGroup_window);
+    }
 });
 
 document.querySelector("#myFpv_groups_addBtn").addEventListener("click", function() {
@@ -534,6 +621,8 @@ document.getElementById("myFpv-groups-window").addEventListener("click", functio
         document.getElementById("myFpv-group-window-id").value = id;
 
         document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
+
+        document.getElementById("myFpv-group-window").style.display = "inline";
       });
     });
   });
@@ -551,28 +640,18 @@ document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click"
 
 document.querySelector("#myFpv-parameters-groundColor-btn").addEventListener("click", function() {
     let color = document.getElementById("myFpv-parameters-groundColor").value;
-    let hex = color.replace('#', '');
 
-    let r = parseInt(hex.slice(0, 2), 16) / 255;
-    let g = parseInt(hex.slice(2, 4), 16) / 255;
-    let b = parseInt(hex.slice(4, 6), 16) / 255;
-
-    let newColor = new THREE.Color(r, g, b);
+    let newColor = colorThree(color);
 
     plane.material.map = null; // Remove texture
-    plane.material.color.set(newColor); // Set new color
-    plane.material.needsUpdate = true; // Ensure material updates
+    plane.material = new THREE.MeshBasicMaterial({ color: newColor }); // Set new color without lighting effect
+    plane.material.needsUpdate = true;
 });
 
 document.querySelector("#myFpv-parameters-skyColor-btn").addEventListener("click", function() {
     let color = document.getElementById("myFpv-parameters-skyColor").value;
-    let hex = color.replace('#', '');
 
-    let r = parseInt(hex.slice(0, 2), 16) / 255;
-    let g = parseInt(hex.slice(2, 4), 16) / 255;
-    let b = parseInt(hex.slice(4, 6), 16) / 255;
-
-    let newColor = new THREE.Color(r, g, b);
+    let newColor = colorThree(color);
 
     renderer.setClearColor(newColor);
 });

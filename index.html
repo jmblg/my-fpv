@@ -10,7 +10,22 @@
     <script type="module" src="js/index.js" defer></script>
 </head>
 <body>
-    <div style="position:fixed;top:1vw;right:1vw;width:20vw;background-color:#CCC;z-index:1;" class="box control">
+    <header>
+        <nav class="navbar" role="navigation" aria-label="main navigation" astyle="position:fixed;top:0px;left:0px;width:100%;background-color:rgba(255,255,255,0.5) !important;z-index:1 !important;">
+            <ul class="navbar-start" style="background-color:rgba(255,255,255,0.5) !important;;">
+                <li id="myFpv_menu-entities" class="navbar-item">Entities</li>
+                <li id="myFpv_menu-parameters" class="navbar-item">Parameters</li>
+             </ul>
+        </nav>
+        <div id="myFpv_menu-entities-window" style="position:fixed;top:5vh;left:0px;background-color:white;padding:1vw;z-index:2;display:none;">
+            <ul class="menu-list">
+                <li id="myFpv_menu-entities-window-entities_all">All entities</li>
+                <li id="myFpv_menu-entities-window-manage_groups">Manage groups</li>
+              </ul>
+        </div>
+    </header>
+    <div id="myFpv-entities_all-window" class="box control" style="position:fixed;top:1vw;right:1vw;width:20vw;background-color:#CCC;z-index:30;">
+        <i id="myFpv-entities_all-window-close" class="myFpv-close fas fa-times"></i>
         <div class="fixed-grid">
             <h5>All entities</h5>
             <div class="grid" style="position:relative;">
@@ -97,7 +112,8 @@
             </div>
         </div>       
     </div>
-    <div id="myFpv-groups-window" style="position:fixed;top:1vw;left:1vw;width:20vw;background-color:#CCC;z-index:1;" class="box control">
+    <div id="myFpv-groups-window" style="position:fixed;top:5vw;left:2.5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
+        <i id="myFpv-groups-window-close" class="myFpv-close fas fa-times"></i>
         <h5>Groups</h5>
         <div id="myFpv-groups-all"></div>
         <div class="fixed-grid">
@@ -106,7 +122,8 @@
             </div>
         </div>
     </div>
-    <div id="myFpv-group-window" style="position:fixed;top:10vw;left:10vw;width:20vw;background-color:#CCC;z-index:1;" class="box control">
+    <div id="myFpv-group-window" style="position:fixed;top:7.5vw;left:5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
+        <i id="myFpv-group-window-close" class="myFpv-close fas fa-times"></i>
         <h5>Group <i id="myFpv-group-name"></i></h5>
         <div class="fixed-grid">
             <div class="grid">
@@ -116,7 +133,8 @@
         <div id="myFpv-group-entities-selections_list"></div>
         <input id="myFpv-group-window-id" type="hidden" />
     </div>
-    <div id="myFpv-parameters-window" style="position:fixed;top:30vw;left:0vw;width:20vw;background-color:#CCC;z-index:1;" class="box control">
+    <div id="myFpv-parameters-window" style="position:fixed;top:5vw;left:5vh;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
+        <i id="myFpv-parameters-window-close" class="myFpv-close fas fa-times"></i>
         <h5>Parameters</h5>
         <div class="fixed-grid">
             <div class="grid">

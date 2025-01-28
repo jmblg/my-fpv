@@ -1,11 +1,25 @@
 @import '../node_modules/bulma/css/bulma.min.css';
-@import '../node_modules/font-awesome/css/font-awesome.min.css';
+@import "../node_modules/@fortawesome/fontawesome-free/css/all.min.css";
 
 h5 {
     padding: 0px;
     margin: 0px;
     margin-bottom: 1vh;
     font-size: 20px;
+}
+
+nav ul li {
+    background-color:rgba(255,255,255,0.5) !important;
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+}
+
+nav ul li:hover {
+    transform: scale(1.025);
+}
+
+.menu-list li {
+    cursor: pointer;
 }
 
 select {
@@ -17,6 +31,13 @@ canvas {
     top: 0px;
     left: 0px;
     z-index: 0;
+}
+
+.myFpv-close {
+    position: absolute;
+    top: 1vh;
+    right: 1vw;
+    cursor: pointer;
 }
 
 .myFpv-entities-window-group {
