@@ -18,7 +18,7 @@ class Entity {
 
         this.id_group = 0;
 
-        this.markerCube = null;
+        this.selectedT = null;
 
         this.update(type, sizeT, positionT, color, opacity, animated);
 
@@ -42,24 +42,55 @@ class Entity {
     }
 
     selected() {
-        if (this.markerCube == null) {
-            const markerGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });  // Vert
-            this.markerCube = new THREE.Mesh(markerGeometry, markerMaterial);
-            
-            this.markerCube.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + 1, this.mesh.position.z);
-            
-            scene.add(this.markerCube);
+        if (this.selectedT == null) {
+            this.selectedT = new Array();
+
+            const markerGeometry = new THREE.BoxGeometry(0.175, 0.175, 0.175);
+            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            this.selectedT.x = new THREE.Mesh(markerGeometry, markerMaterial);
+            this.selectedT.y = new THREE.Mesh(markerGeometry, markerMaterial);
+            this.selectedT.z = new THREE.Mesh(markerGeometry, markerMaterial);
+
+            this.selectedT.x.name = "size-x";
+            this.selectedT.y.name = "size-y";
+            this.selectedT.z.name = "size-z";
+
+            // Lier l'entité parent
+            this.selectedT.x.parentEntity = this;
+            this.selectedT.y.parentEntity = this;
+            this.selectedT.z.parentEntity = this;
+
+            this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(this.mesh.geometry.parameters.width) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
+            this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(this.mesh.geometry.parameters.height) / 2 + 0.5, this.mesh.position.z);
+            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(this.mesh.geometry.parameters.depth) / 2 + 0.5);
+
+            scene.add(this.selectedT.x);
+            scene.add(this.selectedT.y);
+            scene.add(this.selectedT.z);
         } else {
-            this.markerCube.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + 1, this.mesh.position.z);
+            this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(this.mesh.geometry.parameters.width) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
+            this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(this.mesh.geometry.parameters.height) / 2 + 0.5, this.mesh.position.z);
+            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(this.mesh.geometry.parameters.depth) / 2 + 0.5);
         }
     }
 
+    selected_color(color) {
+        color = rgbToHex(color);
+        
+        let newColor = colorThree(color);
+        const markerMaterial = new THREE.MeshBasicMaterial({ color: newColor });
+
+        this.selectedT.x.material = markerMaterial;
+        this.selectedT.y.material = markerMaterial;
+        this.selectedT.z.material = markerMaterial;
+    }
+
     unselected() {
-        scene.remove(this.markerCube);
-        this.markerCube.geometry.dispose();
-        this.markerCube.material.dispose();
-        this.markerCube = null;
+        scene.remove(this.selectedT.x); scene.remove(this.selectedT.y); scene.remove(this.selectedT.z);
+        this.selectedT.x.geometry.dispose(); this.selectedT.x.material.dispose();
+        this.selectedT.y.geometry.dispose(); this.selectedT.y.material.dispose();
+        this.selectedT.z.geometry.dispose(); this.selectedT.z.material.dispose();
+        this.selectedT = null;
     }
 
     update(type, sizeT, positionT, color, opacity, animated) {
@@ -91,6 +122,7 @@ class Entity {
             // Si le mesh n'existe pas encore, on le crée
             this.material = new THREE.MeshBasicMaterial({ color: color || 0x00ff00 });
             this.mesh = new THREE.Mesh(this.geometry, this.material);
+            this.mesh.entity = this;
             scene.add(this.mesh);
         } else {
             // Si le mesh existe déjà, on met simplement à jour ses propriétés
@@ -158,7 +190,7 @@ class Group {
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 10); // Positionner la caméra pour qu'elle regarde le sol
+camera.position.set(0, 8, 15); // Positionner la caméra pour qu'elle regarde le sol
 camera.lookAt(0, 0, 0); // Regarder vers le centre (où le sol est positionné)
 
 const renderer = new THREE.WebGLRenderer();
@@ -188,6 +220,13 @@ let entietiesT = new Array();
 let entity_lastSelection = null;
 let entityToAdd = null;
 
+// selector color
+let color_selectorT = new Array();
+color_selectorT.background = new Array();
+color_selectorT.color = new Array(); color_selectorT.color[0] = 0, color_selectorT.color[1] = 0, color_selectorT.color[2] = 255;
+color_selectorT.status = new Array(); color_selectorT.status[0] = "-", color_selectorT.status[1] = "+", color_selectorT.status[2] = "+";
+color_selectorT.is = 2;
+
 // groupes
 let groupsT = new Array();
 
@@ -200,17 +239,35 @@ const controls = new OrbitControls(camera, renderer.domElement);
 let keysT = new Array();
 keysT.left = false; keysT.right = false; keysT.top = false; keysT.bottom = false;
 
+// mouse
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let mouse_previous = new THREE.Vector2();
+let mouseIsMoving_wt = camera;
+let intersects = [];
+
 function animate() {
   requestAnimationFrame(animate);
 
   myFpv_toAddAnEntity();
 
+  // si une entité est animée :
   entietiesT.forEach((entity) => {
     if (entity.animated == true) {
         entity.mesh.rotation.x += 0.01;
         entity.mesh.rotation.y += 0.01;
     }
   });
+
+  // modification de la couleur des mini-cubes de sélection :
+    if (color_selectorT) {
+        color_fluo_update(color_selectorT);
+        let id_o_selected = document.getElementById("myFpv_entities_all_select").value;
+        if (id_o_selected) {
+            let entityO = entietiesT.find(o => o.id.toString() === id_o_selected.toString());
+            entityO.selected_color(color_selectorT.color);
+        }
+    }
 
     if (keysT.right == true) { 
         let direction = new THREE.Vector3();
@@ -243,7 +300,12 @@ function animate() {
         controls.target.addScaledVector(direction, -0.1);
     }
 
-  controls.update();
+    controls.update();
+    if (mouseIsMoving_wt != camera) {
+        controls.enableRotate = false;
+    } else {
+        controls.enableRotate = true;
+    }
 
   renderer.render(scene, camera);
 }
@@ -278,15 +340,15 @@ function myFpv_addAnEntity() {
 
     entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated));
 
-    // DERNIERE SELECTION !!! IL FAUT FINIR CA
-    if (entity_lastSelection == null) {
-        entity_lastSelection = entietiesT[entietiesT.length-1];
-    }
-
     myFpv_groups_all_select_entities(id_group);
 
     scene.add(entietiesT[entietiesT.length-1].mesh);
 
+    // SELECTION DE L ENTITÉ
+    if (entity_lastSelection != null) {
+        entity_lastSelection.unselected();
+    }
+    entity_lastSelection = entietiesT[entietiesT.length-1];
     entietiesT[entietiesT.length-1].selected();
 }
 
@@ -316,6 +378,15 @@ function myFpv_deleteAnEntityBtn() {
     entityO.destroy();
 
     myFpv_groups_all_select_entities(id_group);
+
+    // SELECTION DE L ENTITÉ ACTUELLEMENT DANS LE SELECT PRINCIPAL (all entities):
+    let id_entity_selected = document.getElementById("myFpv_entities_all_select").value;
+    let entityO_selected = entietiesT.find(o => o.id.toString() === id_entity_selected.toString());
+    if (entity_lastSelection != null) {
+        entity_lastSelection.unselected();
+    }
+    entity_lastSelection = entityO_selected;
+    entityO_selected.selected();
 }
 
 function myFpv_prepareAnEntity() {
@@ -405,6 +476,107 @@ function myFpv_groups_entities_select(id) {
     myFpv_groups_all_select_entities(id_group);
 }
 
+function onMouseMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    if (mouseIsMoving_wt != camera) {
+        if (mouse_previous.y != mouse.y) {
+            if (mouseIsMoving_wt.name == "size-y") {
+                let y = document.getElementById("myFpv_addAnEntity_sizeY").value;
+                if (mouse_previous.y < mouse.y) {
+                        y++;
+                    } else if ((mouse_previous.y > mouse.y)&&(y > 1)) {
+                        y--;
+                    }
+                document.getElementById("myFpv_addAnEntity_sizeY").value = y;
+                myFpv_updateAnEntity();
+            } else if (mouseIsMoving_wt.name == "size-z") {
+                let z = document.getElementById("myFpv_addAnEntity_sizeZ").value;
+                if (mouse_previous.y > mouse.y) {
+                        z++;
+                    } else if ((mouse_previous.y < mouse.y)&&(z > 1)) {
+                        z--;
+                    }
+                document.getElementById("myFpv_addAnEntity_sizeZ").value = z;
+                myFpv_updateAnEntity();
+            }
+        }
+        else if (mouse_previous.x != mouse.x) {
+            if (mouseIsMoving_wt.name == "size-x") {
+                let x = document.getElementById("myFpv_addAnEntity_sizeX").value;
+                if (mouse_previous.x < mouse.x) {
+                        x++;
+                    } else if ((mouse_previous.x > mouse.x)&&(x > 1)) {
+                        x--;
+                    }
+                document.getElementById("myFpv_addAnEntity_sizeX").value = x;
+                myFpv_updateAnEntity();
+            }
+        }
+
+        mouse_previous.x = mouse.x;
+        mouse_previous.y = mouse.y;
+    }
+}
+
+function onMouseDown(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    intersects = getIntersects();
+
+    if (intersects.length > 0) {
+        // Si on a trouvé une intersection avec n'importe quelle entité dans la scène :
+        let intersectedObject = intersects[0].object;
+
+        if (intersectedObject.entity) {
+            if (intersectedObject.entity.id == 0) {
+                // l'objet avec l'id 0 est l'entité de création (translucide) .. Il faut donc vérifier si elle ne supperpose pas un autre objet
+                intersectedObject = intersects[1].object;
+            }
+            if (intersectedObject.entity) {
+                // on peut à présent sélectionner la bonne entité :
+                let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
+                
+                // mettre son numéro de groupe dans le sélecteur concerné :
+                document.getElementById("myFpv_groups_all_select").value = entityO.id_group;
+                const event = new Event('change');  // Crée un nouvel événement 'change'
+                document.getElementById("myFpv_groups_all_select").dispatchEvent(event);
+                // mettre son id à elle dans le sélecteur concerné :
+                setTimeout(function(){
+                    document.getElementById("myFpv_entities_all_select").value = entityO.id;
+                    const event2 = new Event('change');
+                    document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
+                 }, 100);
+            }
+        }
+
+        if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
+             // Accéder à l'entité parente et afficher son ID
+             const parentEntity = intersectedObject.parentEntity;
+             if (parentEntity) {
+                mouseIsMoving_wt = intersectedObject;
+
+                mouse_previous.x = mouse.x;
+                mouse_previous.y = mouse.y;
+             }
+
+        }
+    }
+}
+
+function onMouseUp(event) {
+    mouseIsMoving_wt = camera;
+}
+
+// obtenir les intersections entre le rayon et la scène
+function getIntersects() {
+    return raycaster.intersectObjects(scene.children);
+}
+
 function colorgen(type)	{
     let rgbt = new Array();
 	switch (type)
@@ -423,6 +595,30 @@ function colorgen(type)	{
 		}
 
 	return rgbt;
+	}
+
+function color_fluo_update(wt)
+	{
+        var to_switch = false;
+
+        if (wt.status[wt.is] == "+")
+            {
+            if (wt.color[wt.is] < 255) { wt.color[wt.is]+=1; } else { wt.status[wt.is] = "-"; to_switch = true; }
+            }
+        else
+            {
+            if (wt.color[wt.is] > 0) { wt.color[wt.is]-=1; } else { wt.status[wt.is] = "+"; to_switch = true; }
+            }
+            
+        if (to_switch == true)
+            {
+            switch (wt.is)
+                {
+                case 0 : wt.is = 1; break;
+                case 1 : wt.is = 2; break;
+                case 2 : wt.is = 0; break;
+                }
+            }
 	}
 
 function rgbToHex(rgbt) {
@@ -503,6 +699,10 @@ window.onload = function(){
     myFpv_groups_all_select();
 };
 
+window.addEventListener('mousemove', onMouseMove, false);
+window.addEventListener('mousedown', onMouseDown, false);
+window.addEventListener('mouseup', onMouseUp, false);
+
 document.querySelectorAll(".myFpv-close").forEach(element => {
     element.addEventListener("click", function() {
         let id = this.id.replace("-close","")
@@ -547,6 +747,13 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_addAnEntity_positionZ").value = entityO.mesh.position.z;
 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
+
+    // SELECTION DE L ENTITÉ :
+    if (entity_lastSelection != null) {
+        entity_lastSelection.unselected();
+    }
+    entity_lastSelection = entityO;
+    entityO.selected();
 });
 
 document.querySelector("#myFpv_groups_all_select").addEventListener("change", function() {
@@ -636,6 +843,15 @@ document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click"
     entityO.setGroup(id_group);
 
     myFpv_groups_entities_select(id_group);
+
+    // SELECTION DE L ENTITÉ ACTUELLEMENT DANS LE SELECT PRINCIPAL (all entities):
+    let id_entity_selected = document.getElementById("myFpv_entities_all_select").value;
+    let entityO_selected = entietiesT.find(o => o.id.toString() === id_entity_selected.toString());
+    if (entity_lastSelection != null) {
+        entity_lastSelection.unselected();
+    }
+    entity_lastSelection = entityO_selected;
+    entityO_selected.selected();
 });
 
 document.querySelector("#myFpv-parameters-groundColor-btn").addEventListener("click", function() {
