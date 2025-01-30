@@ -20,101 +20,160 @@
         <div id="myFpv_menu-entities-window" style="position:fixed;top:5vh;left:0px;background-color:white;padding:1vw;z-index:2;display:none;">
             <ul class="menu-list">
                 <li id="myFpv_menu-entities-window-entities_all">All entities</li>
-                <li id="myFpv_menu-entities-window-manage_groups">Manage groups</li>
+                <li id="myFpv_menu-entities-window-manage_groups">Group manager</li>
               </ul>
         </div>
     </header>
-    <div id="myFpv-entities_all-window" class="box control" style="position:fixed;top:1vw;right:1vw;width:20vw;background-color:#CCC;z-index:30;">
+    <div id="myFpv-entities_all-window" class="box control" style="position:fixed;top:1vw;right:1vw;width:20vw;height:100vh;overflow-y:auto;background-color:#CCC;z-index:30;">
         <i id="myFpv-entities_all-window-close" class="myFpv-close fas fa-times"></i>
         <div class="fixed-grid">
-            <h5>All entities</h5>
+            <h5 id="myFpv-entities_all-window-h5">All entities</h5>
             <div class="grid" style="position:relative;">
                 <select id="myFpv_groups_all_select" class="select input cell is-col-min-5"></select>
                 <div class="cell">
-                    <button class="button is-dark" style="font-size:12px;padding:2px 4px;width:100%;">Manage groups</button>
-                </div>
-            </div>
-            <div class="grid" style="position:relative;">
-                <select id="myFpv_entities_all_select" class="myFpv-entities-select select input cell is-col-min-5" disabled></select>
-                <div class="cell">
-                    <input id="myFpv_renameEntity" type="text" class="input" placeholder="rename" disabled />
-                    <button id="myFpv_renameEntityBtn" class="button is-dark" style="position:absolute;bottom:3.33px;right:5px;padding:0px 0.25vw;font-size:20px;font-weight:normal;" disabled>Ok</button>
+                    <button id="myFpv_entities_all_selectGroups_btn" class="button is-light" style="font-size:12px;padding:2px 4px;width:100%;">Select by group</button>
+                    <button id="myFpv_entities_all_manageGroups_btn" class="button is-dark" style="font-size:12px;padding:2px 4px;width:100%;">Group manager</button>
                 </div>
             </div>
         </div>
-        <div class="myFpv-entities-window-group">
+        <div id="myFpv-entities_all-window-byGroups" style="display:none;">
+            <button id="myFpv-entities_all-window-byGroups-addEntity-btn" class="button is-white" style="font-size:1.5vh !important;">Add or remove an entity from this group</button>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_sizeX" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size x</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_sizeY" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size y</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_sizeZ" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size z</label>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_positionX" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position x</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_positionY" type="number" class="input cell is-col-min-15" value="2" min="1" /><label class="cell">Position y</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_Group_positionZ" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position z</label>
+                    </div>
+                </div>
+            </div>
             <div class="fixed-grid">
                 <div class="grid">
-                    <select id="myFpv_addAnEntity_type" class="select input cell is-col-min-5">
-                        <option value="cube">Cube</option>
-                        <option value="sphere">Sphere</option>
-                    </select>
-                    <label class="cell">Type</label>
+                    <div class="cell">
+                        <button id="" class="button is-warning">Duplicate</button>
+                    </div>
+                    <div class="cell">
+                        <button id="myFpv_updateAGroupBtn" class="button is-info">Update</button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="myFpv-entities-window-group">
+        <div id="myFpv-entities_all-window-byEntities">
+            <div class="fixed-grid">
+                <div class="grid" style="position:relative;">
+                    <select id="myFpv_entities_all_select" class="myFpv-entities-select select input cell is-col-min-5" disabled></select>
+                    <div class="cell">
+                        <input id="myFpv_renameEntity" type="text" class="input" placeholder="rename" disabled />
+                        <button id="myFpv_renameEntityBtn" class="button is-dark" style="position:absolute;bottom:3.33px;right:5px;padding:0px 0.25vw;font-size:20px;font-weight:normal;" disabled>Ok</button>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <select id="myFpv_addAnEntity_type" class="select input cell is-col-min-5">
+                            <option value="cube">Cube</option>
+                            <option value="sphere">Sphere</option>
+                        </select>
+                        <label class="cell">Type</label>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_sizeX" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size x</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_sizeY" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size y</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_sizeZ" type="number" class="input cell is-col-min-5" value="3" min="1" /><label class="cell">Size z</label>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_positionX" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position x</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_positionY" type="number" class="input cell is-col-min-15" value="2" min="1" /><label class="cell">Position y</label>
+                    </div>
+                </div>
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input id="myFpv_addAnEntity_positionZ" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position z</label>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <div class="fixed-grid">
+                    <div class="grid">
+                        <input type="color" id="myFpv_addAnEntity_color" name="myFpv_addAnEntity_color" class="input cell is-col-min-15" value="#ffffff"> <label class="checkbox">Color</label>
+                    </div>
+                </div>
+            </div>
+            <div class="myFpv-entities-window-group">
+                <h5>Animation</h5>
+                <input type="checkbox" id="myFpv_addAnEntity_animated" name="myFpv_addAnEntity_animated" class="checkbox"> <label class="checkbox">Yes</label>
+            </div>
             <div class="fixed-grid">
                 <div class="grid">
-                    <input id="myFpv_addAnEntity_sizeX" type="number" class="input cell is-col-min-5" value="4" min="1" /><label class="cell">Size x</label>
+                    <div class="cell">
+                        <button id="myFpv_addAnEntityBtn" class="button is-primary">Add new</button>
+                    </div>
+                    <div class="cell">
+                        <button id="myFpv_duplicateAnEntityBtn" class="button is-warning">Duplicate</button>
+                    </div>
                 </div>
             </div>
             <div class="fixed-grid">
                 <div class="grid">
-                    <input id="myFpv_addAnEntity_sizeY" type="number" class="input cell is-col-min-5" value="4" min="1" /><label class="cell">Size y</label>
-                </div>
-            </div>
-            <div class="fixed-grid">
-                <div class="grid">
-                    <input id="myFpv_addAnEntity_sizeZ" type="number" class="input cell is-col-min-5" value="4" min="1" /><label class="cell">Size z</label>
+                    <div class="cell">
+                        <button id="myFpv_updateAnEntityBtn" class="button is-info">Update</button>
+                    </div>
+                    <div class="cell">
+                        <button id="myFpv_deleteAnEntityBtn" class="button is-danger">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="myFpv-entities-window-group">
-            <div class="fixed-grid">
-                <div class="grid">
-                    <input id="myFpv_addAnEntity_positionX" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position x</label>
-                </div>
-            </div>
-            <div class="fixed-grid">
-                <div class="grid">
-                    <input id="myFpv_addAnEntity_positionY" type="number" class="input cell is-col-min-15" value="2" min="1" /><label class="cell">Position y</label>
-                </div>
-            </div>
-            <div class="fixed-grid">
-                <div class="grid">
-                    <input id="myFpv_addAnEntity_positionZ" type="number" class="input cell is-col-min-15" value="1" /><label class="cell">Position z</label>
-                </div>
-            </div>
-        </div>
-        <div class="myFpv-entities-window-group">
-            <div class="fixed-grid">
-                <div class="grid">
-                    <input type="color" id="myFpv_addAnEntity_color" name="myFpv_addAnEntity_color" class="input cell is-col-min-15" value="#ffffff"> <label class="checkbox">Color</label>
-                </div>
-            </div>
-        </div>
-        <div class="myFpv-entities-window-group">
-            <h5>Animation</h5>
-            <input type="checkbox" id="myFpv_addAnEntity_animated" name="myFpv_addAnEntity_animated" class="checkbox"> <label class="checkbox">Yes</label>
-        </div>
-        <div class="fixed-grid has-3-cols">
-            <div class="grid">
-                <div class="cell">
-                    <button id="myFpv_addAnEntityBtn" class="button is-primary">Add</button>
-                </div>
-                <div class="cell">
-                    <button id="myFpv_updateAnEntityBtn" class="button is-info">Update</button>
-                </div>
-                <div class="cell">
-                    <button id="myFpv_deleteAnEntityBtn" class="button is-danger">Delete</button>
-                </div>
-            </div>
-        </div>       
     </div>
     <div id="myFpv-groups-window" style="position:fixed;top:5vw;left:2.5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
         <i id="myFpv-groups-window-close" class="myFpv-close fas fa-times"></i>
-        <h5>Groups</h5>
+        <h5>Group manager</h5>
         <div id="myFpv-groups-all"></div>
         <div class="fixed-grid">
             <div class="grid">
@@ -124,7 +183,7 @@
     </div>
     <div id="myFpv-group-window" style="position:fixed;top:7.5vw;left:5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
         <i id="myFpv-group-window-close" class="myFpv-close fas fa-times"></i>
-        <h5>Group <i id="myFpv-group-name"></i></h5>
+        <h5>Manage group <i id="myFpv-group-name"></i></h5>
         <div class="fixed-grid">
             <div class="grid">
                 <select id="myFpv-group-entities-all" class="myFpv-entities-select select input is-col-min-5" disabled></select> <button id="myFpv-group-entities-all-btn" class="cell button is-dark" disabled>Add the entity</button>
@@ -141,7 +200,7 @@
                 <input id="myFpv-parameters-groundColor" type="color" class="cell input" value="#40DD40" /> <button id="myFpv-parameters-groundColor-btn" class="cell button is-dark">Ground color</button>
             </div>
             <div class="grid">
-                <input id="myFpv-parameters-skyColor" type="color" class="cell input" value="#87CEEB" /> <button id="myFpv-parameters-skyColor-btn" class="cell button is-dark">Sky color</button>
+                <input id="myFpv-parameters-skyColor" type="color" class="cell input" value="#060613" /> <button id="myFpv-parameters-skyColor-btn" class="cell button is-dark">Sky color</button>
             </div>
         </div>
     </div>
