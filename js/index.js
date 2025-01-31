@@ -45,11 +45,15 @@ class Entity {
         if (this.selectedT == null) {
             this.selectedT = new Array();
 
-            const markerGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+            const markerGeometryX = new THREE.BoxGeometry(0.25, 0.25, parseInt(this.mesh.geometry.parameters.depth));
+            const markerGeometryY = new THREE.BoxGeometry(parseInt(this.mesh.geometry.parameters.width), 0.25, 0.25);
+            const markerGeometryZ = new THREE.BoxGeometry(0.25, parseInt(this.mesh.geometry.parameters.height), 0.25);
+
             const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            this.selectedT.x = new THREE.Mesh(markerGeometry, markerMaterial);
-            this.selectedT.y = new THREE.Mesh(markerGeometry, markerMaterial);
-            this.selectedT.z = new THREE.Mesh(markerGeometry, markerMaterial);
+
+            this.selectedT.x = new THREE.Mesh(markerGeometryX, markerMaterial);
+            this.selectedT.y = new THREE.Mesh(markerGeometryY, markerMaterial);
+            this.selectedT.z = new THREE.Mesh(markerGeometryZ, markerMaterial);
 
             this.selectedT.x.name = "size-x";
             this.selectedT.y.name = "size-y";
@@ -174,8 +178,7 @@ class Entity {
         this.type = null;
         this.color = null;
         this.animated = null;
-    }    
-    
+    }
 }
 
 class Group {
@@ -185,7 +188,38 @@ class Group {
         this.id = Group.id;
         this.name = name;
 
+        this.geometry = null;
+        this.material = null;
+        this.mesh = null;
+
         Group.id++;
+    }
+
+    // CECI EST A REGLER :
+    selected(sizeT, positionT) {
+        if (!this.geometry || !(this.geometry instanceof THREE.BoxGeometry)) {
+            this.geometry = new THREE.BoxGeometry(sizeT[0], sizeT[1], sizeT[2]);
+        } else {
+            this.geometry.parameters.width = sizeT[0];
+            this.geometry.parameters.height = sizeT[1];
+            this.geometry.parameters.depth = sizeT[2];
+            this.geometry.dispose(); // Libérer l'ancienne géométrie
+            this.geometry = new THREE.BoxGeometry(sizeT[0], sizeT[1], sizeT[2]);
+        }
+
+        if (!this.mesh) {
+            // Si le mesh n'existe pas encore, on le crée
+            this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            this.mesh = new THREE.Mesh(this.geometry, this.material);
+            scene.add(this.mesh);
+        } else {
+            // Si le mesh existe déjà, on met simplement à jour ses propriétés
+            this.mesh.geometry = this.geometry;
+            this.mesh.material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        }
+
+        // Mise à jour de la position
+        this.mesh.position.set(positionT[0], positionT[1], positionT[2]);
     }
 }
 
@@ -231,6 +265,7 @@ color_selectorT.is = 2;
 
 // groupes
 let groupsT = new Array();
+let groupAllgroupsWindowOpen = false;
 
 // light
 const light = new THREE.AmbientLight(0x888888, 5); // Lumière ambiante pour éclairer la scène
@@ -249,17 +284,17 @@ let mouseIsMoving_wt = camera;
 let intersects = [];
 
 function animate() {
-  requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 
-  myFpv_toAddAnEntity();
+    myFpv_toAddAnEntity();
 
-  // si une entité est animée :
-  entietiesT.forEach((entity) => {
-    if (entity.animated == true) {
-        entity.mesh.rotation.x += 0.01;
-        entity.mesh.rotation.y += 0.01;
-    }
-  });
+    // si une entité est animée :
+    entietiesT.forEach((entity) => {
+        if (entity.animated == true) {
+            entity.mesh.rotation.x += 0.01;
+            entity.mesh.rotation.y += 0.01;
+        }
+    });
 
   // modification de la couleur des mini-cubes de sélection :
     if (color_selectorT) {
@@ -360,35 +395,51 @@ function myFpv_updateAnEntity() {
     let t = myFpv_prepareAnEntity();
 
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
-    entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+    if (entityO) {
+        entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
 
-    entityO.selected();
+        entityO.selected();
+    }
 }
 
 function myFpv_deleteAnEntityBtn() {
     let id = document.getElementById("myFpv_entities_all_select").value;
+    // il se peut que l'id de l'entité sélectionnée ne correspond pas à cet id .. Il vaut mieux privilégier l'id du bloc sélectionné
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+    let entityO = entityOT[0];
+    if (entityO) {
+        id = entityO.id;
+    }
+
     let id_group = document.getElementById("myFpv_groups_all_select").value;
 
     let index = entietiesT.findIndex(o => o.id.toString() === id.toString());
-
-    let entityO = entietiesT[index];
-
+    entityO = entietiesT[index];
+    
     // détruire dans le tableau
     entietiesT.splice(index, 1);
 
     // détruire en tant qu'objet
-    entityO.destroy();
+    if (entityO) {
+        // mettre directement l'id_group de l'entité pour être sûr :
+        id_group = entityO.id_group;
+        entityO.destroy();
+        }
 
     myFpv_groups_all_select_entities(id_group);
 
     // SELECTION DE L ENTITÉ ACTUELLEMENT DANS LE SELECT PRINCIPAL (all entities):
     let id_entity_selected = document.getElementById("myFpv_entities_all_select").value;
     let entityO_selected = entietiesT.find(o => o.id.toString() === id_entity_selected.toString());
+
     if (entity_lastSelection != null) {
         entity_lastSelection.unselected();
     }
     entity_lastSelection = entityO_selected;
-    entityO_selected.selected();
+
+    if (entityO_selected) {
+        entityO_selected.selected();
+    }
 }
 
 function myFpv_prepareAnEntity() {
@@ -425,6 +476,7 @@ function myFpv_groups_all_select_entities(id) {
     // afficher tous les objets du groupe concerné dans le select myFpv_entities_all_select
     let html = "";
     let t = entietiesT.filter(entity => parseInt(entity.id_group) === parseInt(id));
+
     t.forEach((entity, index, array) => {
         let select = "";
         if ((id == 0)&&(index === array.length - 1)) { select = " selected"; }
@@ -530,7 +582,7 @@ function onMouseDown(event) {
 
     intersects = getIntersects();
 
-    if (intersects.length > 0) {
+    if ((intersects.length > 0)&&(groupAllgroupsWindowOpen == false)) {
         // Si on a trouvé une intersection avec n'importe quelle entité dans la scène :
         let intersectedObject = intersects[0].object;
 
@@ -543,16 +595,18 @@ function onMouseDown(event) {
                 // on peut à présent sélectionner la bonne entité :
                 let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
                 
-                // mettre son numéro de groupe dans le sélecteur concerné :
-                document.getElementById("myFpv_groups_all_select").value = entityO.id_group;
-                const event = new Event('change');  // Crée un nouvel événement 'change'
-                document.getElementById("myFpv_groups_all_select").dispatchEvent(event);
-                // mettre son id à elle dans le sélecteur concerné :
-                setTimeout(function(){
-                    document.getElementById("myFpv_entities_all_select").value = entityO.id;
-                    const event2 = new Event('change');
-                    document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
-                 }, 100);
+                if (entityO) {
+                    // mettre son numéro de groupe dans le sélecteur concerné :
+                    document.getElementById("myFpv_groups_all_select").value = entityO.id_group;
+                    const event = new Event('change');  // Crée un nouvel événement 'change'
+                    document.getElementById("myFpv_groups_all_select").dispatchEvent(event);
+                    // mettre son id à elle dans le sélecteur concerné :
+                    setTimeout(function(){
+                        document.getElementById("myFpv_entities_all_select").value = entityO.id;
+                        const event2 = new Event('change');
+                        document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
+                    }, 100);
+                }
             }
         }
 
@@ -738,12 +792,20 @@ document.querySelector("#myFpv_menu-parameters").addEventListener("click", funct
 
 document.querySelector("#myFpv_entities_all_selectGroups_btn").addEventListener("click", function() {
     if (document.getElementById("myFpv-entities_all-window-byEntities").style.display == "none") {
+        groupAllgroupsWindowOpen = false;
+
         document.getElementById("myFpv-entities_all-window-h5").textContent = "All entities";
         document.getElementById("myFpv_entities_all_selectGroups_btn").textContent = "Select by group";
 
         document.getElementById("myFpv-entities_all-window-byEntities").style.display = "inline";
         document.getElementById("myFpv-entities_all-window-byGroups").style.display = "none";
+
+        if (entity_lastSelection) {
+            entity_lastSelection.selected();
+        }
     } else {
+        groupAllgroupsWindowOpen = true;
+
         let selectT = new Array();
         const selectElement = document.getElementById("myFpv_groups_all_select");
         for (let i = 0; i < selectElement.options.length; i++) {
@@ -758,7 +820,12 @@ document.querySelector("#myFpv_entities_all_selectGroups_btn").addEventListener(
         document.getElementById("myFpv-entities_all-window-byGroups").style.display = "inline";
 
         // déselectionner l'entité actuellement sélectionnée
-        
+        let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+        let entityO = entityOT[0];
+        if (entityO) {
+            entity_lastSelection = entityO;
+            entityO.unselected();
+        }
 
         // directement placer le dernier select
         if (selectElement.value == 0) {
@@ -820,57 +887,76 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
 });
 
 document.querySelector("#myFpv_groups_all_select").addEventListener("change", function() {
+ /*   // on va déselectionner l'entité actuellement selected et sélectionner celle qui devrait l'être à présent donc document.getElementById("myFpv_groups_all_select").value);
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+    let entityO = entityOT[0];
+    if (entityO) {
+        entity_lastSelection = entityO;
+        entityO.unselected();
+        let id_entity = document.getElementById("myFpv_groups_all_select").value;
+        entityO = entietiesT.find(o => o.id.toString() === id_entity.toString());
+        entityO.selected();
+    }*/
+
     // calculer la position x, y, z la plus éloignée sur l'ensemble des objets
     // il faudra aussi calculer la plus petite position, pour créer un width et height géants qu'on ajoutera dans la classe group
-    let x = null, y = null, z = null;
-    let size_x = null, size_y = null, size_z = null;
+    let positionT = new Array();
+    positionT.x = null, positionT.y = null, positionT.z = null;
+
+    let sizeT = new Array();
+    sizeT.x = null, sizeT.y = null, sizeT.z = null;
 
     if (document.getElementById("myFpv_groups_all_select").value != 0) {
         let t = entietiesT.filter(entity => entity.id_group === document.getElementById("myFpv_groups_all_select").value);
         t.forEach(element => {
-            if (x == null) { x = element.mesh.position.x; }
-            if (y == null) { y = element.mesh.position.y; }
-            if (z == null) { z = element.mesh.position.z; }
-            if (element.mesh.position.x > x) {
-                x = element.mesh.position.x;
+            if (positionT.x == null) { positionT.x = element.mesh.position.x; }
+            if (positionT.y == null) { positionT.y = element.mesh.position.y; }
+            if (positionT.z == null) { positionT.z = element.mesh.position.z; }
+            if (element.mesh.position.x > positionT.x) {
+                positionT.x = element.mesh.position.x;
             }
-            if (element.mesh.position.y > y) {
-                y = element.mesh.position.y;
+            if (element.mesh.position.y > positionT.y) {
+                positionT.y = element.mesh.position.y;
             }
-            if (element.mesh.position.z > z) {
-                z = element.mesh.position.z;
+            if (element.mesh.position.z > positionT.z) {
+                positionT.z = element.mesh.position.z;
             }
 
-            if (size_x == null) { size_x = element.mesh.geometry.parameters.width; }
-            if (size_y == null) { size_y = element.mesh.geometry.parameters.height; }
-            if (size_z == null) { size_x = element.mesh.geometry.parameters.depth; }
-            if (element.mesh.geometry.parameters.width > size_x) {
-                size_x = element.mesh.geometry.parameters.width;
+            if (sizeT.x == null) { sizeT.x = element.mesh.geometry.parameters.width; }
+            if (sizeT.y == null) { sizeT.y = element.mesh.geometry.parameters.height; }
+            if (sizeT.z == null) { sizeT.x = element.mesh.geometry.parameters.depth; }
+            if (element.mesh.geometry.parameters.width > sizeT.x) {
+                sizeT.x = element.mesh.geometry.parameters.width;
             }
-            if (element.mesh.geometry.parameters.height > size_y) {
-                size_y = element.mesh.geometry.parameters.height;
+            if (element.mesh.geometry.parameters.height > sizeT.y) {
+                sizeT.y = element.mesh.geometry.parameters.height;
             }
-            if (element.mesh.geometry.parameters.depth > size_z) {
-                size_z = element.mesh.geometry.parameters.depth;
+            if (element.mesh.geometry.parameters.depth > sizeT.z) {
+                sizeT.z = element.mesh.geometry.parameters.depth;
             }
-            console.log(x,y,z,size_x,size_y,size_z);
+            console.log(positionT.x,positionT.y,positionT.z,sizeT.x,sizeT.y,sizeT.z);
           });
     }
 
-    if (x == null) { x = 1; }
-    if (y == null) { y = 1; }
-    if (z == null) { z = 1; }
-    if (size_x == null) { size_x = 0; }
-    if (size_y == null) { size_y = 0; }
-    if (size_z == null) { size_x = 0; }
+    if (positionT.x == null) { positionT.x = 1; }
+    if (positionT.y == null) { positionT.y = 1; }
+    if (positionT.z == null) { positionT.z = 1; }
+    if (sizeT.x == null) { sizeT.x = 1; }
+    if (sizeT.y == null) { sizeT.y = 1; }
+    if (sizeT.z == null) { sizeT.x = 1; }
 
-    document.getElementById("myFpv_Group_positionX").value = x;
-    document.getElementById("myFpv_Group_positionY").value = y;
-    document.getElementById("myFpv_Group_positionZ").value = z;
+    let groupO = groupsT.find(o => o.id.toString() === document.getElementById("myFpv_groups_all_select").value.toString());
+    if (groupO) {
+        groupO.selected(sizeT, positionT);
+    }
 
-    document.getElementById("myFpv_Group_sizeX").value = size_x;
-    document.getElementById("myFpv_Group_sizeY").value = size_y;
-    document.getElementById("myFpv_Group_sizeZ").value = size_z;
+    document.getElementById("myFpv_Group_positionX").value = positionT.x;
+    document.getElementById("myFpv_Group_positionY").value = positionT.y;
+    document.getElementById("myFpv_Group_positionZ").value = positionT.z;
+
+    document.getElementById("myFpv_Group_sizeX").value = sizeT.x;
+    document.getElementById("myFpv_Group_sizeY").value = sizeT.y;
+    document.getElementById("myFpv_Group_sizeZ").value = sizeT.z;
 
     myFpv_groups_all_select_entities(this.value);
 });
