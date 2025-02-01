@@ -19,6 +19,7 @@ class Entity {
         this.id_group = 0;
 
         this.selectedT = null;
+        this.selected_type = "";
 
         this.update(type, sizeT, positionT, color, opacity, animated);
 
@@ -42,6 +43,8 @@ class Entity {
     }
 
     selected() {
+        const angle = Math.PI / 4;
+
         if (this.selectedT == null) {
             this.selectedT = new Array();
 
@@ -71,11 +74,48 @@ class Entity {
             scene.add(this.selectedT.x);
             scene.add(this.selectedT.y);
             scene.add(this.selectedT.z);
+
+            this.selected_type = "size";
         } else {
             this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(this.mesh.geometry.parameters.width) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
             this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(this.mesh.geometry.parameters.height) / 2 + 0.5, this.mesh.position.z);
             this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(this.mesh.geometry.parameters.depth) / 2 + 0.5);
+
+            if (this.selected_type == "size") {
+                this.selected_type = "position";
+            } else {
+                this.selected_type = "size";
+            }
         }
+    }
+
+    selected_resize(sizeT) {
+        // Mettre à jour les géométries des marqueurs sélectionnés
+        this.selectedT.x.geometry.dispose(); // Libérer les anciennes géométries
+        this.selectedT.y.geometry.dispose();
+        this.selectedT.z.geometry.dispose();
+    
+        // Recréer les géométries avec les nouvelles dimensions
+        this.selectedT.x.geometry = new THREE.BoxGeometry(0.25, 0.25, sizeT.z);
+        this.selectedT.y.geometry = new THREE.BoxGeometry(sizeT.x, 0.25, 0.25);
+        this.selectedT.z.geometry = new THREE.BoxGeometry(0.25, sizeT.y, 0.25);
+    
+        // Repositionner les marqueurs en fonction de la nouvelle taille
+        this.selectedT.x.position.set(
+            parseInt(this.mesh.position.x) + sizeT.x / 2 + 0.5, 
+            this.mesh.position.y, 
+            this.mesh.position.z
+        );
+        this.selectedT.y.position.set(
+            this.mesh.position.x, 
+            parseInt(this.mesh.position.y) + sizeT.y / 2 + 0.5, 
+            this.mesh.position.z
+        );
+        this.selectedT.z.position.set(
+            this.mesh.position.x, 
+            this.mesh.position.y, 
+            parseInt(this.mesh.position.z) + sizeT.z / 2 + 0.5
+        );
     }
 
     selected_color(color) {
@@ -97,6 +137,7 @@ class Entity {
         this.selectedT.y.geometry.dispose(); this.selectedT.y.material.dispose();
         this.selectedT.z.geometry.dispose(); this.selectedT.z.material.dispose();
         this.selectedT = null;
+        this.selected_type = "";
     }
 
     update(type, sizeT, positionT, color, opacity, animated) {
@@ -206,7 +247,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-renderer.setClearColor(0x87CEEB); // sky
+renderer.setClearColor(0x050519); // sky
 
 // ground
 const planeGeometry = new THREE.PlaneGeometry(250, 250);
@@ -216,7 +257,9 @@ planeTexture.wrapS = THREE.RepeatWrapping;
 planeTexture.wrapT = THREE.RepeatWrapping;
 planeTexture.repeat.set(250, 250);
 const planeMaterial = new THREE.MeshLambertMaterial({ 
-    map: planeTexture
+    map: planeTexture,
+    opacity: 1,  // Ajuste la valeur de l'opacité entre 0 (transparent) et 1 (opaque)
+    transparent: true // Nécessaire pour que la transparence soit effective
 });
 // const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
@@ -226,15 +269,18 @@ scene.add(plane);
 
 // entities
 let entietiesT = new Array();
-let entity_lastSelection = null;
 let entityToAdd = null;
 
 // selector color
 let color_selectorT = new Array();
-color_selectorT.background = new Array();
-color_selectorT.color = new Array(); color_selectorT.color[0] = 0, color_selectorT.color[1] = 0, color_selectorT.color[2] = 255;
-color_selectorT.status = new Array(); color_selectorT.status[0] = "-", color_selectorT.status[1] = "+", color_selectorT.status[2] = "+";
-color_selectorT.is = 2;
+color_selectorT.fluo = new Array();
+color_selectorT.fluo.background = new Array();
+color_selectorT.fluo.color = new Array(); color_selectorT.fluo.color[0] = 0, color_selectorT.fluo.color[1] = 0, color_selectorT.fluo.color[2] = 255;
+color_selectorT.fluo.status = new Array(); color_selectorT.fluo.status[0] = "-", color_selectorT.fluo.status[1] = "+", color_selectorT.fluo.status[2] = "+";
+color_selectorT.fluo.is = 2;
+color_selectorT.bw = new Array();
+color_selectorT.bw.color = new Array(); color_selectorT.bw.color[0] = 255, color_selectorT.bw.color[1] = 255, color_selectorT.bw.color[2] = 255;
+color_selectorT.bw.status = "+";
 
 // groupes
 
@@ -246,6 +292,7 @@ scene.add(light);
 const controls = new OrbitControls(camera, renderer.domElement);
 let keysT = new Array();
 keysT.left = false; keysT.right = false; keysT.top = false; keysT.bottom = false;
+keysT.speed = 0.1;
 
 // mouse
 let raycaster = new THREE.Raycaster();
@@ -269,12 +316,24 @@ function animate() {
 
   // modification de la couleur des mini-cubes de sélection :
     if (color_selectorT) {
-        color_fluo_update(color_selectorT);
+        color_update(color_selectorT.fluo, "fluo");
+        color_update(color_selectorT.bw, "bw");
         let id_o_selected = document.getElementById("myFpv_entities_all_select").value;
         if (id_o_selected) {
             let entityO = entietiesT.find(o => o.id.toString() === id_o_selected.toString());
-            entityO.selected_color(color_selectorT.color);
+            if (entityO.selected_type == "size") {
+                entityO.selected_color(color_selectorT.fluo.color);
+            } else {
+                entityO.selected_color(color_selectorT.bw.color);
+            }
         }
+    }
+
+    if ((keysT.right)||(keysT.left)||(keysT.top)||(keysT.bottom)) {
+        keysT.speed += 0.005;
+    }
+    if ((keysT.right == false)&&(keysT.left == false)&&(keysT.top == false)&&(keysT.bottom == false)&&(keysT.speed != 0.1)) {
+        keysT.speed = 0.1;
     }
 
     if (keysT.right == true) { 
@@ -282,30 +341,30 @@ function animate() {
         camera.getWorldDirection(direction);
         let right = new THREE.Vector3(-direction.z, 0, direction.x); 
         right.normalize();
-        camera.position.addScaledVector(right, 0.1);
-        controls.target.addScaledVector(right, 0.1);
+        camera.position.addScaledVector(right, keysT.speed);
+        controls.target.addScaledVector(right, keysT.speed);
     }
     if (keysT.left == true) {
         let direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
         let left = new THREE.Vector3(direction.z, 0, -direction.x);
         left.normalize();
-        camera.position.addScaledVector(left, 0.1);
-        controls.target.addScaledVector(left, 0.1);
+        camera.position.addScaledVector(left, keysT.speed);
+        controls.target.addScaledVector(left, keysT.speed);
     }
     if (keysT.top == true) {
         let direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
         direction.normalize();
-        camera.position.addScaledVector(direction, 0.1);
-        controls.target.addScaledVector(direction, 0.1);
+        camera.position.addScaledVector(direction, keysT.speed);
+        controls.target.addScaledVector(direction, keysT.speed);
     }
     if (keysT.bottom == true) {
         let direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
         direction.normalize();
-        camera.position.addScaledVector(direction, -0.1);
-        controls.target.addScaledVector(direction, -0.1);
+        camera.position.addScaledVector(direction, -keysT.speed);
+        controls.target.addScaledVector(direction, -keysT.speed);
     }
 
     controls.update();
@@ -349,56 +408,62 @@ function myFpv_addAnEntity() {
 
     scene.add(entietiesT[entietiesT.length-1].mesh);
 
-    // SELECTION DE L ENTITÉ
-    if (entity_lastSelection != null) {
-        entity_lastSelection.unselected();
-    }
-    entity_lastSelection = entietiesT[entietiesT.length-1];
+    // Désélection de toutes les entités :
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+    entityOT.forEach(function(element){
+        element.unselected();
+    });
+
+    // SELECTION DE L ENTITÉ PRÉCISE :
     entietiesT[entietiesT.length-1].selected();
 
     myFpv_entities_all_select();
+
+    // sélectionner dans le selecteur de "All entities" la dernière entité générée
+    document.getElementById("myFpv_entities_all_select").value = entietiesT[entietiesT.length-1].id;
 }
 
-function myFpv_updateAnEntity() {
+function myFpv_updateAnEntity(byMouse) {
     let id = document.getElementById("myFpv_entities_all_select").value;
 
     let t = myFpv_prepareAnEntity();
 
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
     if (entityO) {
+        if (byMouse == false) { entityO.unselected(); }
         entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
-
-        entityO.selected();
+        if (byMouse == false) { eentityO.selected(); }
     }
 }
 
 function myFpv_deleteAnEntityBtn() {
-    let id = document.getElementById("myFpv_entities_all_select").value;
-    // il se peut que l'id de l'entité sélectionnée ne correspond pas à cet id .. Il vaut mieux privilégier l'id du bloc sélectionné
     let entityOT = entietiesT.filter(entity => entity.selectedT != null);
     let entityO = entityOT[0];
+ 
     if (entityO) {
-        id = entityO.id;
+        // on en profite d'abord pour déselectionner toutes les entités sélectionnées de entityOT :
+        entityOT.forEach(function(element){
+            element.unselected();
+        });
+
+        // ensuite on passe à la destruction :
+        let id = entityO.id;
+        document.getElementById("myFpv_entities_all_select").value = id;
         entityO.destroy();
-    }
 
-    let index = entietiesT.findIndex(o => o.id.toString() === id.toString());
-    
-    // détruire dans le tableau
-    entietiesT.splice(index, 1);
+        let index = entietiesT.findIndex(o => o.id.toString() === id.toString());
+        // détruire dans le tableau :
+        entietiesT.splice(index, 1);
 
-    // SELECTION DE L ENTITÉ ACTUELLEMENT DANS LE SELECT PRINCIPAL (all entities) :
-    // A RAFRAICHIR QUAND IL Y AURA LES GROUPES :
-    let id_entity_selected = document.getElementById("myFpv_entities_all_select").value;
-    let entityO_selected = entietiesT.find(o => o.id.toString() === id_entity_selected.toString());
+        // rafraichir le input select
+        myFpv_entities_all_select();
+        // prendre la dernière id du select
+        if (document.getElementById("myFpv_entities_all_select").length > 0) {
+            document.getElementById("myFpv_entities_all_select").selectedIndex = document.getElementById("myFpv_entities_all_select").options.length - 1;
+            const event = new Event('change');
+            document.getElementById("myFpv_entities_all_select").dispatchEvent(event);
+        }
 
-    if (entity_lastSelection != null) {
-        entity_lastSelection.unselected();
-    }
-    entity_lastSelection = entityO_selected;
-
-    if (entityO_selected) {
-        entityO_selected.selected();
     }
 }
 
@@ -438,6 +503,16 @@ function myFpv_entities_all_select() {
         html += `<option value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
     });
     document.getElementById("myFpv_entities_all_select").innerHTML = html;
+
+    if (document.getElementById("myFpv_entities_all_select").length == 0) {
+        document.getElementById("myFpv_entities_all_select").disabled = true;
+        document.getElementById("myFpv_renameEntity").disabled = true;
+        document.getElementById("myFpv_renameEntityBtn").disabled = true;
+    } else {
+        document.getElementById("myFpv_entities_all_select").disabled = false;
+        document.getElementById("myFpv_renameEntity").disabled = false;
+        document.getElementById("myFpv_renameEntityBtn").disabled = false;
+    }
 }
 
 function onMouseMove(event) {
@@ -445,42 +520,58 @@ function onMouseMove(event) {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     if (mouseIsMoving_wt != camera) {
-        if (mouse_previous.y != mouse.y) {
-            if (mouseIsMoving_wt.name == "size-y") {
-                let y = document.getElementById("myFpv_addAnEntity_sizeY").value;
-                if (mouse_previous.y < mouse.y) {
-                        y++;
-                    } else if ((mouse_previous.y > mouse.y)&&(y > 1)) {
-                        y--;
-                    }
-                document.getElementById("myFpv_addAnEntity_sizeY").value = y;
-                myFpv_updateAnEntity();
-            } else if (mouseIsMoving_wt.name == "size-z") {
-                let z = document.getElementById("myFpv_addAnEntity_sizeZ").value;
-                if (mouse_previous.y > mouse.y) {
-                        z++;
-                    } else if ((mouse_previous.y < mouse.y)&&(z > 1)) {
-                        z--;
-                    }
-                document.getElementById("myFpv_addAnEntity_sizeZ").value = z;
-                myFpv_updateAnEntity();
+        // retrouver le nom de l'entité sélectionnée
+        let id_o_selected = document.getElementById("myFpv_entities_all_select").value;
+        if (id_o_selected) {
+        let entityO = entietiesT.find(o => o.id.toString() === id_o_selected.toString());
+        if (entityO) {
+            if (mouse_previous.y != mouse.y) {
+                if (mouseIsMoving_wt.name == "size-y") {
+                    let y = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Y").value;
+                    if (mouse_previous.y < mouse.y) {
+                            y++;
+                        } else if (((mouse_previous.y > mouse.y)&&(y > 1))||(entityO.selected_type == "position")) {
+                            y--;
+                        }
+                    document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Y").value = y;
+                    myFpv_updateAnEntity(true);
+                } else if (mouseIsMoving_wt.name == "size-z") {
+                    let z = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value;
+                    if (mouse_previous.y > mouse.y) {
+                            z++;
+                        } else if (((mouse_previous.y < mouse.y)&&(z > 1))||(entityO.selected_type == "position")) {
+                            z--;
+                        }
+                    document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value = z;
+                    myFpv_updateAnEntity(true);
+                }
             }
-        }
-        else if (mouse_previous.x != mouse.x) {
-            if (mouseIsMoving_wt.name == "size-x") {
-                let x = document.getElementById("myFpv_addAnEntity_sizeX").value;
-                if (mouse_previous.x < mouse.x) {
-                        x++;
-                    } else if ((mouse_previous.x > mouse.x)&&(x > 1)) {
-                        x--;
-                    }
-                document.getElementById("myFpv_addAnEntity_sizeX").value = x;
-                myFpv_updateAnEntity();
+            else if (mouse_previous.x != mouse.x) {
+                if (mouseIsMoving_wt.name == "size-x") {
+                    let x = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "X").value;
+                    if (mouse_previous.x < mouse.x) {
+                            x++;
+                        } else if (((mouse_previous.x > mouse.x)&&(x > 1))||(entityO.selected_type == "position")) {
+                            x--;
+                        }
+                    document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "X").value = x;
+                    myFpv_updateAnEntity(true);
+                }
             }
-        }
 
-        mouse_previous.x = mouse.x;
-        mouse_previous.y = mouse.y;
+            mouse_previous.x = mouse.x;
+            mouse_previous.y = mouse.y;
+
+            // redimensionner les barres de sélections autour de l'entité (sur la scène) :
+
+            let sizeT = new Array();
+            sizeT.x = document.getElementById("myFpv_addAnEntity_sizeX").value;
+            sizeT.y = document.getElementById("myFpv_addAnEntity_sizeY").value;
+            sizeT.z = document.getElementById("myFpv_addAnEntity_sizeZ").value;
+
+            entityO.selected_resize(sizeT);
+            }
+        }
     }
 }
 
@@ -502,9 +593,7 @@ function onMouseDown(event) {
                 intersectedObject = intersects[1].object;
             }
             if (intersectedObject.entity) {
-                // on peut à présent sélectionner la bonne entité :
                 let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
-                
                 if (entityO) {
                     document.getElementById("myFpv_entities_all_select").value = entityO.id;
                     const event2 = new Event('change');
@@ -555,28 +644,39 @@ function colorgen(type)	{
 	return rgbt;
 	}
 
-function color_fluo_update(wt)
+function color_update(wt, how)
 	{
-        var to_switch = false;
+        if (how == "fluo") {
+            let to_switch = false;
 
-        if (wt.status[wt.is] == "+")
-            {
-            if (wt.color[wt.is] < 255) { wt.color[wt.is]+=1; } else { wt.status[wt.is] = "-"; to_switch = true; }
+            if (wt.status[wt.is] == "+") {
+                if (wt.color[wt.is] < 255) { wt.color[wt.is]+=1; } else { wt.status[wt.is] = "-"; to_switch = true; }
+            } else {
+                if (wt.color[wt.is] > 0) { wt.color[wt.is]-=1; } else { wt.status[wt.is] = "+"; to_switch = true; }
             }
-        else
-            {
-            if (wt.color[wt.is] > 0) { wt.color[wt.is]-=1; } else { wt.status[wt.is] = "+"; to_switch = true; }
-            }
-            
-        if (to_switch == true)
-            {
-            switch (wt.is)
-                {
-                case 0 : wt.is = 1; break;
-                case 1 : wt.is = 2; break;
-                case 2 : wt.is = 0; break;
+                
+            if (to_switch == true) {
+                switch (wt.is) {
+                    case 0 : wt.is = 1; break;
+                    case 1 : wt.is = 2; break;
+                    case 2 : wt.is = 0; break;
                 }
             }
+        } else if (how == "bw") {
+            if (wt.status == "+") {
+                if (wt.color[0] < 255) {
+                    wt.color[0]+=2; wt.color[1]+=2; wt.color[2]+=2;
+                } else {
+                    wt.status = "-";
+                }
+            } else {
+                if (wt.color[0] > 0) {
+                    wt.color[0]-=2; wt.color[1]-=2; wt.color[2]-=2;
+                } else {
+                    wt.status = "+";
+                }
+            }
+        }
 	}
 
 function rgbToHex(rgbt) {
@@ -681,7 +781,19 @@ document.querySelector("#myFpv_menu-parameters").addEventListener("click", funct
 });
 
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
+    /// on va virer tous les potentiels actuels selected des différentes entités sur la scène
+    // SAUF si l'objet qui nous intéresse est déjà sélectionné !
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
     let entityO = entietiesT.find(o => o.id.toString() === this.value.toString());
+    let id_for_selection = 0;
+    if (entityO) { id_for_selection = entityO.id; }
+    entityOT.forEach(function(element){
+        if (element.id != id_for_selection) {
+            element.unselected();
+        }
+    });
+
+    // ensuite on peut s'occuper de l'entité entityO :
 
     document.getElementById("myFpv_addAnEntity_type").value = entityO.type;
 
@@ -695,11 +807,6 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
 
-    // SELECTION DE L ENTITÉ :
-    if (entity_lastSelection != null) {
-        entity_lastSelection.unselected();
-    }
-    entity_lastSelection = entityO;
     entityO.selected();
 });
 
@@ -713,6 +820,9 @@ document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", funct
 
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
     entityO.setName(name);
+
+    myFpv_entities_all_select();
+    document.getElementById("myFpv_entities_all_select").value = id;
 });
 
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
@@ -728,29 +838,36 @@ document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", functi
         let x = document.getElementById("myFpv_addAnEntity_positionX").value;
         let y = document.getElementById("myFpv_addAnEntity_positionY").value;
         let z = document.getElementById("myFpv_addAnEntity_positionZ").value;
-        x++; y++; z--;
+        let confirm_msg = `Do you want to place the element higher than position Y ?`;
+        var r = confirm(confirm_msg);
+        if (r == true)
+            {
+            y = parseInt(y) + parseInt(height);
+            }
         document.getElementById("myFpv_addAnEntity_positionX").value = x;
         document.getElementById("myFpv_addAnEntity_positionY").value = y;
         document.getElementById("myFpv_addAnEntity_positionZ").value = z;
     }
+
+    let color = rgbToHex(colorgen("dark"));
+    document.getElementById("myFpv_addAnEntity_color").value = color;
 
     myFpv_addAnEntity();
 });
 
 document.querySelector("#myFpv_duplicateAnEntityBtn").addEventListener("click", function() {
     let x = document.getElementById("myFpv_addAnEntity_positionX").value;
+    x++;
     let y = document.getElementById("myFpv_addAnEntity_positionY").value;
- //   let z = document.getElementById("myFpv_addAnEntity_positionZ").value;
-    x++; y++;// z--;
+    y++;
     document.getElementById("myFpv_addAnEntity_positionX").value = x;
     document.getElementById("myFpv_addAnEntity_positionY").value = y;
- //   document.getElementById("myFpv_addAnEntity_positionZ").value = z;
 
     myFpv_addAnEntity();
 });
 
 document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", function() {
-    myFpv_updateAnEntity();
+    myFpv_updateAnEntity(false);
 });
 
 document.querySelector("#myFpv_deleteAnEntityBtn").addEventListener("click", function() {
