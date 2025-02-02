@@ -27,7 +27,7 @@
     <div id="myFpv-entities_all-window" class="box control" style="position:fixed;top:1vw;right:1vw;width:20vw;height:100vh;overflow-y:auto;background-color:#CCC;z-index:30;">
         <i id="myFpv-entities_all-window-close" class="myFpv-close fas fa-times"></i>
         <div class="fixed-grid">
-            <h5 id="myFpv-entities_all-window-h5">All entities</h5>
+            <h4 id="myFpv-entities_all-window-h4">All entities</h4>
             <div class="grid" style="position:relative;">
                 <select id="myFpv_groups_all_select" class="select input cell is-col-min-5"></select>
                 <div class="cell">
@@ -144,9 +144,14 @@
                         <input type="color" id="myFpv_addAnEntity_color" name="myFpv_addAnEntity_color" class="input cell is-col-min-15" value="#ffffff"> <label class="checkbox">Color</label>
                     </div>
                 </div>
+                <div class="fixed-grid" style="margin-top:1vh;">
+                    <div class="grid">
+                        <button id="myFpv_addAnEntity_texture" class="cell button is-white is-col-min-15">Choose</button> <label class="checkbox">Texture</label>
+                    </div>
+                </div>
             </div>
             <div class="myFpv-entities-window-group">
-                <h5>Animation</h5>
+                <h4>Animation</h4>
                 <input type="checkbox" id="myFpv_addAnEntity_animated" name="myFpv_addAnEntity_animated" class="checkbox"> <label class="checkbox">Yes</label>
             </div>
             <div class="fixed-grid">
@@ -171,9 +176,15 @@
             </div>
         </div>
     </div>
+    <div id="myFpv-entities_all-textures-window" style="position:fixed;bottom:15%;right:5vw;width:20vw;background-color:#CCC;z-index:31;display:none;" class="box control">
+        <i id="myFpv-entities_all-textures-window-close" class="myFpv-close fas fa-times"></i>
+        <h4>Choose a texture</h4>
+        <div id="myFpv-entities_all-textures-selections_list"></div>
+        <input id="myFpv-entities_all-textures-window-id" type="hidden" />
+    </div>
     <div id="myFpv-groups-window" style="position:fixed;top:5vw;left:2.5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
         <i id="myFpv-groups-window-close" class="myFpv-close fas fa-times"></i>
-        <h5>Group manager</h5>
+        <h4>Group manager</h4>
         <div id="myFpv-groups-all"></div>
         <div class="fixed-grid">
             <div class="grid">
@@ -183,7 +194,7 @@
     </div>
     <div id="myFpv-group-window" style="position:fixed;top:7.5vw;left:5vw;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
         <i id="myFpv-group-window-close" class="myFpv-close fas fa-times"></i>
-        <h5>Manage group <i id="myFpv-group-name"></i></h5>
+        <h4>Manage group <i id="myFpv-group-name"></i></h4>
         <div class="fixed-grid">
             <div class="grid">
                 <select id="myFpv-group-entities-all" class="myFpv-entities-select select input is-col-min-5" disabled></select> <button id="myFpv-group-entities-all-btn" class="cell button is-dark" disabled>Add the entity</button>
@@ -194,13 +205,34 @@
     </div>
     <div id="myFpv-parameters-window" style="position:fixed;top:5vw;left:5vh;width:20vw;background-color:#CCC;z-index:1;display:none;" class="box control">
         <i id="myFpv-parameters-window-close" class="myFpv-close fas fa-times"></i>
-        <h5>Parameters</h5>
-        <div class="fixed-grid">
-            <div class="grid">
-                <input id="myFpv-parameters-groundColor" type="color" class="cell input" value="#40DD40" /> <button id="myFpv-parameters-groundColor-btn" class="cell button is-dark">Ground color</button>
+        <h4>Parameters</h4>
+
+        <div class="myFpv-entities-window-group">
+            <h5>Ground</h5>
+            <div class="fixed-grid">
+                <div class="grid">
+                    <input id="myFpv-parameters-groundColor" type="color" class="cell input" value="#40DD40" /> <button id="myFpv-parameters-groundColor-btn" class="cell button is-dark">Add a color</button>
+                </div>
             </div>
-            <div class="grid">
-                <input id="myFpv-parameters-skyColor" type="color" class="cell input" value="#87CEEB" /> <button id="myFpv-parameters-skyColor-btn" class="cell button is-dark">Sky color</button>
+            <br />
+            <div class="fixed-grid">
+                <div class="grid">
+                    <button id="myFpv-parameters-groundErase-btn" class="cell button is-dark">Erase</button> <button id="myFpv-parameters-groundReset-btn" class="cell button is-dark">Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="myFpv-entities-window-group">
+            <h5>Sky</h5>
+            <div class="fixed-grid">
+                <div class="grid">
+                    <input id="myFpv-parameters-skyColor" type="color" class="cell input" value="#87CEEB" /> <button id="myFpv-parameters-skyColor-btn" class="cell button is-dark">Sky color</button>
+                </div>
+            </div>
+            <br />
+            <div class="fixed-grid">
+                <div class="grid">
+                    <div class="cell"></div><button id="myFpv-parameters-skyReset-btn" class="cell button is-dark">Reset</button>
+                </div>
             </div>
         </div>
     </div>

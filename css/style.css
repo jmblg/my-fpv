@@ -1,11 +1,15 @@
 @import '../node_modules/bulma/css/bulma.min.css';
 @import "../node_modules/@fortawesome/fontawesome-free/css/all.min.css";
 
-h5 {
+h4 {
     padding: 0px;
     margin: 0px;
     margin-bottom: 1vh;
     font-size: 20px;
+}
+
+h5 {
+    margin-bottom: 1vh;
 }
 
 nav ul li {
@@ -53,27 +57,13 @@ canvas {
     padding: 0px;
 }
 
-.myFpv-groups-group-block {
+.myFpv-entities_all-textures-block {
     display: inline-block;
-    text-align: center;
-    font-size: 16px;
-    margin: 0.25vw;
-    padding: 0.5vw;
-    border-radius: 0.25vw;
-    background-color: white;
-    transition: all 0.25s ease-in-out;
-    cursor: pointer;
+    width: 22.5%;
+    margin: 1.5px;
+    margin-bottom: 0px;
 }
 
-.myFpv-groups-group-block:hover {
-    transform: scale(1.1);
-}
-
-.myFpv-group-entities-selections_list-line {
-    padding: 0.25vh 1vw;
-    background-color: white;
-    border-style: solid;
-    border-width: 0px;
-    border-bottom-width: 1px;
-    border-color: rgba(0,0,0,0.15);
+.myFpv-entities_all-textures-block img {
+    width: 100%;
 }

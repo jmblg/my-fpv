@@ -240,7 +240,7 @@ class Group {
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 8, 15); // Positionner la caméra pour qu'elle regarde le sol
+camera.position.set(-10, 8.5, 10); // Positionner la caméra pour qu'elle regarde le sol
 camera.lookAt(0, 0, 0); // Regarder vers le centre (où le sol est positionné)
 
 const renderer = new THREE.WebGLRenderer();
@@ -262,7 +262,7 @@ const planeMaterial = new THREE.MeshLambertMaterial({
     transparent: true // Nécessaire pour que la transparence soit effective
 });
 // const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
-const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+let plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = - Math.PI / 2; // Rotation pour que le plan soit horizontal
 plane.position.set(1, 0.5, 1);
 scene.add(plane);
@@ -515,11 +515,36 @@ function myFpv_entities_all_select() {
     }
 }
 
+function myFpv_textures_load() {
+    const textureFiles = [
+        "bricks-1.jpg",
+        "bricks-2.jpg",
+        "bricks-3.jpg",
+        "metal-1.jpg",
+        "paper-1.jpg",
+        "sweet-1.jpg",
+        "textile-1.jpg",
+        "wood-1.jpg",
+        "wood-2.jpg",
+        "wood-3.jpg"
+    ];
+
+    let html = "";
+    textureFiles.forEach(element => {
+        html += `<div class="myFpv-entities_all-textures-block"><img src="img/textures/${element}" /></div>`;
+    });
+
+    document.getElementById("myFpv-entities_all-textures-selections_list").innerHTML = html;
+}
+
 function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     if (mouseIsMoving_wt != camera) {
+        // modifier curseur souris
+        document.body.style.cursor = "all-scroll";
+
         // retrouver le nom de l'entité sélectionnée
         let id_o_selected = document.getElementById("myFpv_entities_all_select").value;
         if (id_o_selected) {
@@ -572,6 +597,8 @@ function onMouseMove(event) {
             entityO.selected_resize(sizeT);
             }
         }
+    } else {
+        document.body.style.cursor = "default";
     }
 }
 
@@ -825,6 +852,10 @@ document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", funct
     document.getElementById("myFpv_entities_all_select").value = id;
 });
 
+document.querySelector("#myFpv_addAnEntity_texture").addEventListener("click", function() {
+    document.getElementById("myFpv-entities_all-textures-window").style.display = "inline";
+});
+
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
     let checkiffirst = document.getElementById("myFpv_entities_all_select").value;
     if (checkiffirst != "") {
@@ -882,6 +913,21 @@ document.querySelector("#myFpv-parameters-groundColor-btn").addEventListener("cl
     plane.material.map = null; // Remove texture
     plane.material = new THREE.MeshBasicMaterial({ color: newColor }); // Set new color without lighting effect
     plane.material.needsUpdate = true;
+    plane.visible = true;
+});
+
+document.querySelector("#myFpv-parameters-groundErase-btn").addEventListener("click", function() {
+    plane.visible = false;
+});
+
+document.querySelector("#myFpv-parameters-groundReset-btn").addEventListener("click", function() {
+    plane.material = new THREE.MeshLambertMaterial({ 
+        map: planeTexture,  // Rétablir la texture d'origine
+        opacity: 1,
+        transparent: true
+    });
+    plane.material.needsUpdate = true;
+    plane.visible = true;
 });
 
 document.querySelector("#myFpv-parameters-skyColor-btn").addEventListener("click", function() {
@@ -891,3 +937,12 @@ document.querySelector("#myFpv-parameters-skyColor-btn").addEventListener("click
 
     renderer.setClearColor(newColor);
 });
+
+document.querySelector("#myFpv-parameters-skyReset-btn").addEventListener("click", function() {
+    renderer.setClearColor(0x050519);
+});
+
+window.onload = function() {
+
+    myFpv_textures_load();
+};
