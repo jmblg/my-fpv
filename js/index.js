@@ -4,7 +4,7 @@ import { OrbitControls } from 'three-stdlib';
 class Entity {
     static id = 0;
 
-    constructor(type, sizeT, positionT, color, opacity, animated) {
+    constructor(type, sizeT, positionT, color, texture, opacity, animatedT) {
         this.id = Entity.id;
         this.name = type;
    
@@ -14,14 +14,15 @@ class Entity {
         this.material = null;
         this.mesh = null;
         this.color = null;
-        this.animated = null;
+        this.texture = null;
+        this.animatedT = new Array;
 
         this.id_group = 0;
 
         this.selectedT = null;
         this.selected_type = "";
 
-        this.update(type, sizeT, positionT, color, opacity, animated);
+        this.update(type, sizeT, positionT, color, texture, opacity, animatedT);
 
         Entity.id++;
     }
@@ -94,12 +95,12 @@ class Entity {
         this.selectedT.x.geometry.dispose(); // Libérer les anciennes géométries
         this.selectedT.y.geometry.dispose();
         this.selectedT.z.geometry.dispose();
-    
+        
         // Recréer les géométries avec les nouvelles dimensions
         this.selectedT.x.geometry = new THREE.BoxGeometry(0.25, 0.25, sizeT.z);
         this.selectedT.y.geometry = new THREE.BoxGeometry(sizeT.x, 0.25, 0.25);
         this.selectedT.z.geometry = new THREE.BoxGeometry(0.25, sizeT.y, 0.25);
-    
+ 
         // Repositionner les marqueurs en fonction de la nouvelle taille
         this.selectedT.x.position.set(
             parseInt(this.mesh.position.x) + sizeT.x / 2 + 0.5, 
@@ -140,7 +141,7 @@ class Entity {
         this.selected_type = "";
     }
 
-    update(type, sizeT, positionT, color, opacity, animated) {
+    update(type, sizeT, positionT, color, texture, opacity, animatedT) {
         this.type = type;
     
         if (type === "cube") {
@@ -183,12 +184,20 @@ class Entity {
         // Mise à jour de la couleur
         this.color = color;
         this.changeColor(this.color, opacity);
-    
+
+        // Mise à jour de la texture
+        this.texture = texture;
+
         // Mise à jour de l'animation
-        this.animated = animated;
-        if (this.animated == false) {
+        this.animatedT = animatedT;
+        if (this.animatedT.x == false) {
             this.mesh.rotation.x = 0;
+        }
+        if (this.animatedT.y == false) {
             this.mesh.rotation.y = 0;
+        }
+        if (this.animatedT.z == false) {
+            this.mesh.rotation.z = 0;
         }
     }
 
@@ -218,7 +227,7 @@ class Entity {
     
         this.type = null;
         this.color = null;
-        this.animated = null;
+        this.animatedT = null;
     }
 }
 
@@ -308,9 +317,14 @@ function animate() {
 
     // si une entité est animée :
     entietiesT.forEach((entity) => {
-        if (entity.animated == true) {
+        if (entity.animatedT.x == true) {
             entity.mesh.rotation.x += 0.01;
+        }
+        if (entity.animatedT.y == true) {
             entity.mesh.rotation.y += 0.01;
+        }
+        if (entity.animatedT.z == true) {
+            entity.mesh.rotation.z += 0.01;
         }
     });
 
@@ -395,16 +409,16 @@ function myFpv_toAddAnEntity() {
     t.opacity = 0.25;
 
     if (!entityToAdd) {
-        entityToAdd = new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+        entityToAdd = new Entity(t.type, t.sizeT, t.positionT, t.color, t.texture, t.opacity, t.animatedT);
     } else {
-        entityToAdd.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
+        entityToAdd.update(t.type, t.sizeT, t.positionT, t.color, t.texture, t.opacity, t.animatedT);
     }
 }
 
 function myFpv_addAnEntity() {
     let t = myFpv_prepareAnEntity();
 
-    entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated));
+    entietiesT.push(new Entity(t.type, t.sizeT, t.positionT, t.color, t.texture, t.opacity, t.animatedT));
 
     scene.add(entietiesT[entietiesT.length-1].mesh);
 
@@ -431,8 +445,8 @@ function myFpv_updateAnEntity(byMouse) {
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
     if (entityO) {
         if (byMouse == false) { entityO.unselected(); }
-        entityO.update(t.type, t.sizeT, t.positionT, t.color, t.opacity, t.animated);
-        if (byMouse == false) { eentityO.selected(); }
+        entityO.update(t.type, t.sizeT, t.positionT, t.color, t.texture, t.opacity, t.animatedT);
+        if (byMouse == false) { entityO.selected(); }
     }
 }
 
@@ -485,14 +499,20 @@ function myFpv_prepareAnEntity() {
     let color = document.getElementById("myFpv_addAnEntity_color").value;
     let opacity = 1;
 
-    let animated = false; if (document.getElementById("myFpv_addAnEntity_animated").checked) { animated = true; }
+    let texture = document.getElementById("myFpv-entities_all-textures-window-id").value;
+
+    let animatedT = new Array(); animatedT.x = false; animatedT.y = false; animatedT.z = false;
+    if (document.getElementById("myFpv_addAnEntity_animated-x").checked) { animatedT.x = true; }
+    if (document.getElementById("myFpv_addAnEntity_animated-y").checked) { animatedT.y = true; }
+    if (document.getElementById("myFpv_addAnEntity_animated-z").checked) { animatedT.z = true; }
 
     t.type = type;
     t.sizeT = sizeT;
     t.positionT = positionT;
     t.color = color;
+    t.texture = texture;
     t.opacity = opacity;
-    t.animated = animated;
+    t.animatedT = animatedT;
 
     return t;
 }
@@ -531,7 +551,12 @@ function myFpv_textures_load() {
 
     let html = "";
     textureFiles.forEach(element => {
-        html += `<div class="myFpv-entities_all-textures-block"><img src="img/textures/${element}" /></div>`;
+        html += `<div class="myFpv-entities_all-textures-block">
+        <input type="radio" name="myFpv-entities_all-textures-block" id="myFpv-entities_all-textures-block-id-${element}" hidden />
+            <label for="myFpv-entities_all-textures-block-id-${element}">
+                <img src="img/textures/${element}" />
+            </label>
+        </div>`;
     });
 
     document.getElementById("myFpv-entities_all-textures-selections_list").innerHTML = html;
@@ -833,6 +858,11 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_addAnEntity_positionZ").value = entityO.mesh.position.z;
 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
+    document.getElementById("myFpv-entities_all-textures-window-id").value = entityO.texture;
+
+    document.getElementById("myFpv_addAnEntity_animated-x").checked = entityO.animatedT.x;
+    document.getElementById("myFpv_addAnEntity_animated-y").checked = entityO.animatedT.y;
+    document.getElementById("myFpv_addAnEntity_animated-z").checked = entityO.animatedT.z;
 
     entityO.selected();
 });
@@ -852,8 +882,35 @@ document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", funct
     document.getElementById("myFpv_entities_all_select").value = id;
 });
 
-document.querySelector("#myFpv_addAnEntity_texture").addEventListener("click", function() {
+document.querySelector("#myFpv_addAnEntity_texture-btn").addEventListener("click", function() {
     document.getElementById("myFpv-entities_all-textures-window").style.display = "inline";
+});
+
+document.querySelector("#myFpv_addAnEntity_texture-delete-btn").addEventListener("click", function() {
+    document.querySelectorAll('input[name="myFpv-entities_all-textures-block"]').forEach(radio => {
+        radio.checked = false;
+    });
+
+    document.getElementById("myFpv-entities_all-textures-window-id").value = "";
+
+    document.getElementById("myFpv_addAnEntity_texture-btn").style.backgroundImage = "none";
+    document.getElementById("myFpv_addAnEntity_texture-btn").style.color = "initial";
+
+    this.style.display = "none";
+});
+
+document.querySelector("#myFpv-entities_all-textures-selections_list").addEventListener("change", function(event) {
+    if (event.target && event.target.name === "myFpv-entities_all-textures-block") {
+        let img = event.target.id.replace("myFpv-entities_all-textures-block-id-","");
+
+        document.getElementById("myFpv-entities_all-textures-window-id").value = event.target.id;
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.backgroundImage = "url('img/textures/" + img + "')";
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.color = "transparent";
+
+        document.getElementById("myFpv_addAnEntity_texture-delete-btn").style.display = "inline";
+
+        document.getElementById("myFpv-entities_all-textures-window").style.display = "none";
+    }
 });
 
 document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", function() {
@@ -871,10 +928,9 @@ document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", functi
         let z = document.getElementById("myFpv_addAnEntity_positionZ").value;
         let confirm_msg = `Do you want to place the element higher than position Y ?`;
         var r = confirm(confirm_msg);
-        if (r == true)
-            {
+        if (r == true) {
             y = parseInt(y) + parseInt(height);
-            }
+        }
         document.getElementById("myFpv_addAnEntity_positionX").value = x;
         document.getElementById("myFpv_addAnEntity_positionY").value = y;
         document.getElementById("myFpv_addAnEntity_positionZ").value = z;
