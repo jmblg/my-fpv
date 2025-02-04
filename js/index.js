@@ -43,6 +43,24 @@ class Entity {
         this.mesh.material = this.material;
     }
 
+    changeTexture(texture) {
+        if (texture != "") {
+            const loader = new THREE.TextureLoader();
+            loader.load("img/textures/" + texture, (loadedTexture) => {
+                this.material = new THREE.MeshBasicMaterial({
+                    map: loadedTexture,
+                    transparent: true,
+                    opacity: this.material.opacity
+                });
+                this.mesh.material = this.material;
+                this.mesh.material.needsUpdate = true;
+
+            }, undefined, (error) => {
+                console.error('Erreur lors du chargement de la texture:', error);
+            });
+        }
+    }    
+
     selected() {
         const angle = Math.PI / 4;
 
@@ -187,6 +205,7 @@ class Entity {
 
         // Mise à jour de la texture
         this.texture = texture;
+        this.changeTexture(this.texture);
 
         // Mise à jour de l'animation
         this.animatedT = animatedT;
@@ -499,7 +518,7 @@ function myFpv_prepareAnEntity() {
     let color = document.getElementById("myFpv_addAnEntity_color").value;
     let opacity = 1;
 
-    let texture = document.getElementById("myFpv-entities_all-textures-window-id").value;
+    let texture = document.getElementById("myFpv-entities_all-textures-window-id").value.replace("myFpv-entities_all-textures-block-id-", "");
 
     let animatedT = new Array(); animatedT.x = false; animatedT.y = false; animatedT.z = false;
     if (document.getElementById("myFpv_addAnEntity_animated-x").checked) { animatedT.x = true; }
@@ -805,9 +824,10 @@ window.onkeydown = function(e) {
             }
         }
 
-window.addEventListener('mousemove', onMouseMove, false);
-window.addEventListener('mousedown', onMouseDown, false);
-window.addEventListener('mouseup', onMouseUp, false);
+const canvas = document.querySelector('canvas');
+canvas.addEventListener('mousemove', onMouseMove, false);
+canvas.addEventListener('mousedown', onMouseDown, false);
+canvas.addEventListener('mouseup', onMouseUp, false);
 
 document.querySelectorAll(".myFpv-close").forEach(element => {
     element.addEventListener("click", function() {
@@ -847,6 +867,8 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
 
     // ensuite on peut s'occuper de l'entité entityO :
 
+    document.getElementById("myFpv_renameEntity").value = "";
+
     document.getElementById("myFpv_addAnEntity_type").value = entityO.type;
 
     document.getElementById("myFpv_addAnEntity_sizeX").value = entityO.mesh.geometry.parameters.width;
@@ -858,17 +880,26 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_addAnEntity_positionZ").value = entityO.mesh.position.z;
 
     document.getElementById("myFpv_addAnEntity_color").value = entityO.color;
+
     document.getElementById("myFpv-entities_all-textures-window-id").value = entityO.texture;
+
+    if (entityO.texture == "") {
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.backgroundImage = "none";
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.color = "initial";
+
+        document.getElementById("myFpv_addAnEntity_texture-delete-btn").style.display = "none";
+    } else {
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.backgroundImage = "url('img/textures/" + entityO.texture + "')";
+        document.getElementById("myFpv_addAnEntity_texture-btn").style.color = "transparent";
+
+        document.getElementById("myFpv_addAnEntity_texture-delete-btn").style.display = "inline";
+    }
 
     document.getElementById("myFpv_addAnEntity_animated-x").checked = entityO.animatedT.x;
     document.getElementById("myFpv_addAnEntity_animated-y").checked = entityO.animatedT.y;
     document.getElementById("myFpv_addAnEntity_animated-z").checked = entityO.animatedT.z;
 
     entityO.selected();
-});
-
-document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
-    document.getElementById("myFpv_renameEntity").value = "";
 });
 
 document.querySelector("#myFpv_renameEntityBtn").addEventListener("click", function() {
