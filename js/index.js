@@ -67,9 +67,9 @@ class Entity {
         if (this.selectedT == null) {
             this.selectedT = new Array();
 
-            const markerGeometryX = new THREE.BoxGeometry(0.25, 0.25, parseInt(this.mesh.geometry.parameters.depth));
-            const markerGeometryY = new THREE.BoxGeometry(parseInt(this.mesh.geometry.parameters.width), 0.25, 0.25);
-            const markerGeometryZ = new THREE.BoxGeometry(0.25, parseInt(this.mesh.geometry.parameters.height), 0.25);
+            const markerGeometryX = new THREE.BoxGeometry(1000, 0.25, 0.25);
+            const markerGeometryY = new THREE.BoxGeometry(0.25, 1000, 0.25);
+            const markerGeometryZ = new THREE.BoxGeometry(0.25, 0.25, 1000);
 
             const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
@@ -86,9 +86,9 @@ class Entity {
             this.selectedT.y.parentEntity = this;
             this.selectedT.z.parentEntity = this;
 
-            this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(this.mesh.geometry.parameters.width) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
-            this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(this.mesh.geometry.parameters.height) / 2 + 0.5, this.mesh.position.z);
-            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(this.mesh.geometry.parameters.depth) / 2 + 0.5);
+            this.selectedT.x.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
+            this.selectedT.y.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
+            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
 
             scene.add(this.selectedT.x);
             scene.add(this.selectedT.y);
@@ -115,9 +115,9 @@ class Entity {
         this.selectedT.z.geometry.dispose();
         
         // Recréer les géométries avec les nouvelles dimensions
-        this.selectedT.x.geometry = new THREE.BoxGeometry(0.25, 0.25, sizeT.z);
-        this.selectedT.y.geometry = new THREE.BoxGeometry(sizeT.x, 0.25, 0.25);
-        this.selectedT.z.geometry = new THREE.BoxGeometry(0.25, sizeT.y, 0.25);
+        this.selectedT.x.geometry = new THREE.BoxGeometry(1000, 0.25, 0.25);
+        this.selectedT.y.geometry = new THREE.BoxGeometry(0.25, 1000, 0.25);
+        this.selectedT.z.geometry = new THREE.BoxGeometry(0.25, 0.25, 1000);
  
         // Repositionner les marqueurs en fonction de la nouvelle taille
         this.selectedT.x.position.set(
@@ -142,7 +142,11 @@ class Entity {
             color = rgbToHex(color);
             
             let newColor = colorThree(color);
-            const markerMaterial = new THREE.MeshBasicMaterial({ color: newColor });
+            const markerMaterial = new THREE.MeshBasicMaterial({
+                color: newColor,
+                opacity: 0.33,
+                transparent: true
+            });
 
             this.selectedT.x.material = markerMaterial;
             this.selectedT.y.material = markerMaterial;
@@ -559,13 +563,24 @@ function myFpv_textures_load() {
         "bricks-1.jpg",
         "bricks-2.jpg",
         "bricks-3.jpg",
+        "ceramic-1.jpg",
+        "ceramic-2.jpg",
+        "ceramic-3.jpg",
         "metal-1.jpg",
         "paper-1.jpg",
+        "plant-1.jpg",
+        "sand-1.jpg",
         "sweet-1.jpg",
+        "stone-1.jpg",
+        "stone-2.jpg",
         "textile-1.jpg",
+        "wall_painted-1.jpg",
+        "wall_painted-2.jpg",
         "wood-1.jpg",
         "wood-2.jpg",
-        "wood-3.jpg"
+        "wood-3.jpg",
+        "wood-4.jpg",
+        "wood-5.jpg"
     ];
 
     let html = "";
@@ -604,15 +619,6 @@ function onMouseMove(event) {
                         }
                     document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Y").value = y;
                     myFpv_updateAnEntity(true);
-                } else if (mouseIsMoving_wt.name == "size-z") {
-                    let z = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value;
-                    if (mouse_previous.y > mouse.y) {
-                            z++;
-                        } else if (((mouse_previous.y < mouse.y)&&(z > 1))||(entityO.selected_type == "position")) {
-                            z--;
-                        }
-                    document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value = z;
-                    myFpv_updateAnEntity(true);
                 }
             }
             else if (mouse_previous.x != mouse.x) {
@@ -624,6 +630,15 @@ function onMouseMove(event) {
                             x--;
                         }
                     document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "X").value = x;
+                    myFpv_updateAnEntity(true);
+                } else if (mouseIsMoving_wt.name == "size-z") {
+                    let z = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value;
+                    if (mouse_previous.x < mouse.x) {
+                            z++;
+                        } else if (((mouse_previous.x > mouse.x)&&(z > 1))||(entityO.selected_type == "position")) {
+                            z--;
+                        }
+                    document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Z").value = z;
                     myFpv_updateAnEntity(true);
                 }
             }
@@ -656,6 +671,7 @@ function onMouseDown(event) {
 
     if (intersects.length > 0) {
         // Si on a trouvé une intersection avec n'importe quelle entité dans la scène :
+        let object_type = "";
         let intersectedObject = intersects[0].object;
 
         if (intersectedObject.entity) {
@@ -664,18 +680,38 @@ function onMouseDown(event) {
                 intersectedObject = intersects[1].object;
             }
             if (intersectedObject.entity) {
-                let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
-                if (entityO) {
-                    document.getElementById("myFpv_entities_all_select").value = entityO.id;
-                    const event2 = new Event('change');
-                    document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
-                }
+                object_type = "entity";
             }
+        } else if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
+             // Accéder à l'entité parente et afficher son ID
+             object_type = "size";
+        } else {
+            // le else ci-dessus peut potentiellement se faire dans le cas où l'utilisateur aurait cliqué sur le plane ...
+            intersectedObject = intersects[1].object;
+            if (intersectedObject.entity) {
+                // il faut vérifier encore qu'il ne s'agit pas de l'id 0 (entité de création translucide)
+                if (intersectedObject.entity.id == 0) {
+                    // l'objet avec l'id 0 est l'entité de création (translucide) .. Il faut donc vérifier si elle ne supperpose pas un autre objet
+                    intersectedObject = intersects[2].object;
+                }
+                if (intersectedObject.entity) {
+                    object_type = "entity";
+                }
+            } else if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
+                // Accéder à l'entité parente et afficher son ID
+                object_type = "size";
+           }
         }
 
-        if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
-             // Accéder à l'entité parente et afficher son ID
-             const parentEntity = intersectedObject.parentEntity;
+        if (object_type == "entity") {
+            let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
+            if (entityO) {
+                document.getElementById("myFpv_entities_all_select").value = entityO.id;
+                let event2 = new Event('change');
+                document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
+            }
+        } else if (object_type == "size") {
+            const parentEntity = intersectedObject.parentEntity;
              if (parentEntity) {
                 mouseIsMoving_wt = intersectedObject;
 
@@ -958,7 +994,7 @@ document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", functi
         let y = document.getElementById("myFpv_addAnEntity_positionY").value;
         let z = document.getElementById("myFpv_addAnEntity_positionZ").value;
         let confirm_msg = `Do you want to place the element higher than position Y ?`;
-        var r = confirm(confirm_msg);
+        let r = confirm(confirm_msg);
         if (r == true) {
             y = parseInt(y) + parseInt(height);
         }
@@ -975,13 +1011,20 @@ document.querySelector("#myFpv_addAnEntityBtn").addEventListener("click", functi
 
 document.querySelector("#myFpv_duplicateAnEntityBtn").addEventListener("click", function() {
     let x = document.getElementById("myFpv_addAnEntity_positionX").value;
-    x++;
+    
     let y = document.getElementById("myFpv_addAnEntity_positionY").value;
-    y++;
+    let confirm_msg = `Do you want to place the new element offset from the target element ?`;
+    let r = confirm(confirm_msg);
+    if (r == true) {
+        x++; y++;
+    }
     document.getElementById("myFpv_addAnEntity_positionX").value = x;
     document.getElementById("myFpv_addAnEntity_positionY").value = y;
 
     myFpv_addAnEntity();
+    if (r == false) {
+        alert(`New element created at the same position as the source element.`);
+    }
 });
 
 document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", function() {
