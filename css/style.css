@@ -108,3 +108,17 @@ canvas {
     border-color: #00FF00;
     border-width: 2px;
 }
+
+.myFpv-groups-all-block {
+    display: inline-block;
+    background-color: white;
+    margin: 1px 3px;
+    padding: 3px 5px;
+    border-radius: 2px;
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+}
+
+.myFpv-groups-all-block:hover {
+    transform: scale(1.05);
+}

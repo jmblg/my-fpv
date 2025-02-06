@@ -319,6 +319,8 @@ color_selectorT.bw.status = "+";
 
 // groupes
 
+let groupsT = new Array();
+
 // light
 const light = new THREE.AmbientLight(0x888888, 5); // Lumière ambiante pour éclairer la scène
 scene.add(light);
@@ -599,6 +601,43 @@ function myFpv_textures_load() {
     document.getElementById("myFpv-entities_all-textures-selections_list").innerHTML = html;
 }
 
+function myFpv_groups_refresh() {
+    let html_group_window = "";
+    let html_allentities_window_select = `<option class="myFpv-entities_all-window-select" value="0">Sans groupe</option>`;
+
+    groupsT.forEach(element => {
+        html_group_window += `<div id="myFpv-groups-all-block-${element.id}" class="myFpv-groups-all-block">${element.name}</div>`;
+        html_allentities_window_select += `<option class="myFpv-entities_all-window-select" value="${element.id}">${element.name}</option>`;
+    });
+
+    document.getElementById("myFpv_groups_add").value = "";
+    document.getElementById("myFpv-groups-all").innerHTML = html_group_window;
+    document.getElementById("myFpv_groups_all_select").innerHTML = html_allentities_window_select;
+}
+
+function myFpv_group_window(id) {
+    let groupO = groupsT.find(o => o.id.toString() === id.toString());
+
+    document.getElementById("myFpv-group-entities-all").disabled = true;
+    document.getElementById("myFpv-group-entities-all-btn").disabled = true;
+
+    if (groupO) {
+        let html_select = ""; let nb = 0;
+        entietiesT.forEach(element => {
+            html_select += `<option class="myFpv-entities_all-window-select" value="${element.id}">${element.name}</option>`;
+            nb++;
+        });
+        if (nb > 0) {
+            document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
+            document.getElementById("myFpv-group-entities-all").innerHTML = html_select;
+            document.getElementById("myFpv-group-entities-all").disabled = false;
+            document.getElementById("myFpv-group-entities-all-btn").disabled = false;
+
+            document.getElementById("myFpv-group-window").style.display = "inline";
+        }
+    }
+}
+
 function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
@@ -617,6 +656,7 @@ function onMouseMove(event) {
                     let y = document.getElementById("myFpv_addAnEntity_" + entityO.selected_type + "Y").value;
                     if (mouse_previous.y < mouse.y) {
                             y++;
+                //      } else if (((mouse_previous.y > mouse.y)&&(y > 1))||((entityO.selected_type == "position")&&(y > 1))) {
                         } else if (((mouse_previous.y > mouse.y)&&(y > 1))||(entityO.selected_type == "position")) {
                             y--;
                         }
@@ -893,6 +933,10 @@ document.querySelector("#myFpv_menu-parameters").addEventListener("click", funct
     document.getElementById("myFpv-parameters-window").style.display = "inline";
 });
 
+document.querySelector("#myFpv_entities_all_manageGroups_btn").addEventListener("click", function() {
+    document.getElementById("myFpv-groups-window").style.display = "inline";
+});
+
 document.querySelector("#myFpv_entities_all_select").addEventListener("change", function() {
     /// on va virer tous les potentiels actuels selected des différentes entités sur la scène
     // SAUF si l'objet qui nous intéresse est déjà sélectionné !
@@ -1036,8 +1080,37 @@ document.querySelector("#myFpv_updateAnEntityBtn").addEventListener("click", fun
     myFpv_updateAnEntity(false);
 });
 
-document.querySelector("#myFpv_deleteAnEntityBtn").addEventListener("click", function() {
-    myFpv_deleteAnEntityBtn();
+// groupes
+
+document.querySelector("#myFpv_menu-entities-window-manage_groups").addEventListener("click", function() {
+    document.getElementById("myFpv-groups-window").style.display = "inline";
+});
+
+document.querySelector("#myFpv_groups_addBtn").addEventListener("click", function() {
+    if (document.getElementById("myFpv_groups_add").value != "") {
+        let name = document.getElementById("myFpv_groups_add").value;
+        groupsT.push(new Group(name));
+        myFpv_groups_refresh();
+    }
+});
+
+document.querySelector("#myFpv-groups-window").addEventListener("click", function() {
+    document.querySelectorAll(".myFpv-groups-all-block").forEach(element => {
+        element.addEventListener("click", function() {
+            let id = this.id.replace("myFpv-groups-all-block-","");
+            myFpv_group_window(id);
+        });
+    });
+});
+
+document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click", function() {
+    alert(1);
+});
+
+// paramètres
+
+document.querySelector("#myFpv-parameters-groundErase-btn").addEventListener("click", function() {
+    plane.visible = false;
 });
 
 document.querySelector("#myFpv-parameters-groundColor-btn").addEventListener("click", function() {
