@@ -288,15 +288,18 @@ const planeTexture = planeTextureLoader.load("img/200.png");
 planeTexture.wrapS = THREE.RepeatWrapping;
 planeTexture.wrapT = THREE.RepeatWrapping;
 planeTexture.repeat.set(250, 250);
-const planeMaterial = new THREE.MeshLambertMaterial({ 
+const planeMaterial = new THREE.MeshLambertMaterial({
     map: planeTexture,
-    opacity: 1,  // Ajuste la valeur de l'opacité entre 0 (transparent) et 1 (opaque)
-    transparent: true // Nécessaire pour que la transparence soit effective
+    opacity: 1,
+    transparent: true,
+    depthWrite: false, // Désactive l'écriture dans le tampon de profondeur
+    depthTest: true,   // Conserve les tests de profondeur
+    side: THREE.DoubleSide // Assure que la grille est visible de chaque côté
 });
-// const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
 let plane = new THREE.Mesh(planeGeometry, planeMaterial);
-plane.rotation.x = - Math.PI / 2; // Rotation pour que le plan soit horizontal
+plane.rotation.x = - Math.PI / 2;
 plane.position.set(1, 0.5, 1);
+//plane.renderOrder = 1; // Force le rendu de cet objet avant les autres
 scene.add(plane);
 
 // entities
@@ -687,27 +690,29 @@ function onMouseDown(event) {
              object_type = "size";
         } else {
             // le else ci-dessus peut potentiellement se faire dans le cas où l'utilisateur aurait cliqué sur le plane ...
-            intersectedObject = intersects[1].object;
-            if (intersectedObject.entity) {
-                // il faut vérifier encore qu'il ne s'agit pas de l'id 0 (entité de création translucide)
-                if (intersectedObject.entity.id == 0) {
-                    // l'objet avec l'id 0 est l'entité de création (translucide) .. Il faut donc vérifier si elle ne supperpose pas un autre objet
-                    intersectedObject = intersects[2].object;
-                }
+            if (intersects[1]) {
+                intersectedObject = intersects[1].object;
                 if (intersectedObject.entity) {
-                    object_type = "entity";
+                    // il faut vérifier encore qu'il ne s'agit pas de l'id 0 (entité de création translucide)
+                    if (intersectedObject.entity.id == 0) {
+                        // l'objet avec l'id 0 est l'entité de création (translucide) .. Il faut donc vérifier si elle ne supperpose pas un autre objet
+                        intersectedObject = intersects[2].object;
+                    }
+                    if (intersectedObject.entity) {
+                        object_type = "entity";
+                    }
+                } else if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
+                    // Accéder à l'entité parente et afficher son ID
+                    object_type = "size";
                 }
-            } else if (intersectedObject.name === "size-x" || intersectedObject.name === "size-y" || intersectedObject.name === "size-z") {
-                // Accéder à l'entité parente et afficher son ID
-                object_type = "size";
-           }
+            }
         }
 
         if (object_type == "entity") {
             let entityO = entietiesT.find(o => o.id.toString() === intersectedObject.entity.id.toString());
             if (entityO) {
                 document.getElementById("myFpv_entities_all_select").value = entityO.id;
-                let event2 = new Event('change');
+                let event2 = new Event("change");
                 document.getElementById("myFpv_entities_all_select").dispatchEvent(event2);
             }
         } else if (object_type == "size") {
