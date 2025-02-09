@@ -562,6 +562,24 @@ function myFpv_entities_all_select() {
     }
 }
 
+function myFpv_entities_all_select_groups_refresh() {
+    // en cas de modification des groupes, cette fonction doit rafraîchir les selecteurs de groupes et d'entités de la fenêtre myFpv-entities_all-window
+    // on va prendre le groupe de l'objet qui est sélectionné et c'est son groupe qui sera selectionné dans le select group
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+    if (entityOT) {
+        let entityO = entityOT[0];
+        document.getElementById("myFpv_groups_all_select").value(entityO.id_group);
+
+        // à présent, on va afficher dans le select myFpv_entities_all_select toutes les entités présentes dans le groupe concerné
+        // à réfléchir pour le reste !
+        let html = "";
+        let t = entietiesT.filter(entity => entity.id_group === entityO.id_group);
+        t.forEach(o => {
+    //        html += ``;
+        });
+    }
+}
+
 function myFpv_textures_load() {
     const textureFiles = [
         "bamboo-1.jpg",
@@ -687,9 +705,9 @@ function myFpv_group_window(id) {
             html_select += `<option class="myFpv-entities_all-window-select" value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
             nb++;
         });
+        document.getElementById("myFpv-group-entities-all").innerHTML = html_select;
         if (nb > 0) {
             document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
-            document.getElementById("myFpv-group-entities-all").innerHTML = html_select;
             document.getElementById("myFpv-group-entities-all").disabled = false;
             document.getElementById("myFpv-group-entities-all-btn").disabled = false;
         }
@@ -1185,6 +1203,7 @@ document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click"
     entityO.id_group = id_group;
 
     myFpv_group_window(id_group);
+    myFpv_entities_all_select_groups_refresh();
 });
 
 // paramètres
