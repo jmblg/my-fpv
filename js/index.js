@@ -222,6 +222,7 @@ class Entity {
         if (this.animatedT.z == false) {
             this.mesh.rotation.z = 0;
         }
+        this.animatedT.direction = animatedT.direction;
     }
 
     setName(txt) {
@@ -255,7 +256,7 @@ class Entity {
 }
 
 class Group {
-    static id = 1;
+    static id = 0;
 
     constructor(name) {
         this.id = Group.id;
@@ -320,6 +321,7 @@ color_selectorT.bw.status = "+";
 // groupes
 
 let groupsT = new Array();
+groupsT.push(new Group("No group"));
 
 // light
 const light = new THREE.AmbientLight(0x888888, 5); // Lumière ambiante pour éclairer la scène
@@ -345,14 +347,16 @@ function animate() {
 
     // si une entité est animée :
     entietiesT.forEach((entity) => {
+        let speed = 0.01; if (entity.animatedT.direction == "left") { speed = -0.01; }
+
         if (entity.animatedT.x == true) {
-            entity.mesh.rotation.x += 0.01;
+            entity.mesh.rotation.x += speed;
         }
         if (entity.animatedT.y == true) {
-            entity.mesh.rotation.y += 0.01;
+            entity.mesh.rotation.y += speed;
         }
         if (entity.animatedT.z == true) {
-            entity.mesh.rotation.z += 0.01;
+            entity.mesh.rotation.z += speed;
         }
     });
 
@@ -532,6 +536,7 @@ function myFpv_prepareAnEntity() {
     if (document.getElementById("myFpv_addAnEntity_animated-x").checked) { animatedT.x = true; }
     if (document.getElementById("myFpv_addAnEntity_animated-y").checked) { animatedT.y = true; }
     if (document.getElementById("myFpv_addAnEntity_animated-z").checked) { animatedT.z = true; }
+    animatedT.direction = document.getElementById("myFpv_addAnEntity_animated-direction").value;
 
     t.type = type;
     t.sizeT = sizeT;
@@ -545,11 +550,34 @@ function myFpv_prepareAnEntity() {
 }
 
 function myFpv_entities_all_select() {
-    let html = "";
-    entietiesT.forEach(function(element){
-        html += `<option value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
+    let html_groups = "", html_entities = "";
+    groupsT.forEach(function(element_group){
+        html_groups += `<option value="${element_group.id}">${element_group.id} - ${element_group.name}</option>`;
     });
-    document.getElementById("myFpv_entities_all_select").innerHTML = html;
+    document.getElementById("myFpv_groups_all_select").innerHTML = html_groups;
+
+    // on va chercher quelle entité est actuellement sélectionnée (s'il y en a une), son groupe sera celui du select group ...
+    let id_group = 0, id_entity = 0;
+    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
+    if (entityOT[0]) {
+        let entityO = entityOT[0];
+        if (entityO) {
+            id_group = entityO.id_group;
+            id_entity = entityO.id;
+        }
+    }
+
+    // sélectionner toutes les entités du groupe choisi :
+    let t = entietiesT.filter(entity => entity.id_group === id_group);
+    t.forEach(function(element){
+        html_entities += `<option value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
+    });
+    document.getElementById("myFpv_entities_all_select").innerHTML = html_entities;
+
+    document.getElementById("myFpv_groups_all_select").value = id_group;
+    if (id_entity != 0) {
+        document.getElementById("myFpv_entities_all_select").value = id_entity;
+    }
 
     if (document.getElementById("myFpv_entities_all_select").length == 0) {
         document.getElementById("myFpv_entities_all_select").disabled = true;
@@ -559,24 +587,6 @@ function myFpv_entities_all_select() {
         document.getElementById("myFpv_entities_all_select").disabled = false;
         document.getElementById("myFpv_renameEntity").disabled = false;
         document.getElementById("myFpv_renameEntityBtn").disabled = false;
-    }
-}
-
-function myFpv_entities_all_select_groups_refresh() {
-    // en cas de modification des groupes, cette fonction doit rafraîchir les selecteurs de groupes et d'entités de la fenêtre myFpv-entities_all-window
-    // on va prendre le groupe de l'objet qui est sélectionné et c'est son groupe qui sera selectionné dans le select group
-    let entityOT = entietiesT.filter(entity => entity.selectedT != null);
-    if (entityOT) {
-        let entityO = entityOT[0];
-        document.getElementById("myFpv_groups_all_select").value(entityO.id_group);
-
-        // à présent, on va afficher dans le select myFpv_entities_all_select toutes les entités présentes dans le groupe concerné
-        // à réfléchir pour le reste !
-        let html = "";
-        let t = entietiesT.filter(entity => entity.id_group === entityO.id_group);
-        t.forEach(o => {
-    //        html += ``;
-        });
     }
 }
 
@@ -679,7 +689,7 @@ function myFpv_textures_load() {
 
 function myFpv_groups_refresh() {
     let html_group_window = "";
-    let html_allentities_window_select = `<option class="myFpv-entities_all-window-select" value="0">Sans groupe</option>`;
+    let html_allentities_window_select = "";
 
     groupsT.forEach(element => {
         html_group_window += `<div id="myFpv-groups-all-block-${element.id}" class="myFpv-groups-all-block">${element.name}</div>`;
@@ -700,11 +710,13 @@ function myFpv_group_window(id) {
     if (groupO) {
         // remplir le select des entités ayant le groupe 0 :
         let html_select = ""; let nb = 0;
-        let t0 = entietiesT.filter(entity => entity.id_group === 0);
-        t0.forEach(element => {
-            html_select += `<option class="myFpv-entities_all-window-select" value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
-            nb++;
-        });
+        if (id != 0) {
+            let t0 = entietiesT.filter(entity => entity.id_group === 0);
+            t0.forEach(element => {
+                html_select += `<option class="myFpv-entities_all-window-select" value="${element.id}">${element.id} - ${element.name} (${element.color})</option>`;
+                nb++;
+            });
+        }
         document.getElementById("myFpv-group-entities-all").innerHTML = html_select;
         if (nb > 0) {
             document.getElementById("myFpv-group-name").textContent = `${groupO.name} (${groupO.id})`;
@@ -716,15 +728,29 @@ function myFpv_group_window(id) {
 
         // liste toutes les entités présentes sur le groupe :
         let html_list = "";
-        let t = entietiesT.filter(entity => entity.id_group === id);
+        let t = entietiesT.filter(entity => entity.id_group.toString() === id.toString());
         t.forEach(o => {
-            html_list += `<li id="class="myFpv-group-entities-selections_list-element-id-${o.id}" class="myFpv-group-entities-selections_list-element">${o.id} - ${o.name} (${o.color})</li>`;
+            html_list += `<li id="myFpv-group-entities-selections_list-element-id-${o.id}" class="myFpv-group-entities-selections_list-element">`;
+            html_list += `${o.id} - ${o.name} (${o.color})`;
+            html_list += `<i id="myFpv-group-entities-selections_list-element-delete-id-${o.id}" class="myFpv-group-entities-selections_list-element-delete fas fa-trash-can"></i>`;
+            html_list += `</li>`;
         });
 
         document.getElementById("myFpv-group-entities-selections_list").innerHTML = html_list;
 
         document.getElementById("myFpv-group-window").style.display = "inline";
     }
+}
+
+function myFpv_group_entities_selections_list_element_delete(id) {
+    let id_group = document.getElementById("myFpv-group-window-id").value;
+
+    let entityO = entietiesT.find(o => o.id.toString() === id.toString());
+    if (entityO) {
+        entityO.id_group = 0;
+    }
+
+    myFpv_group_window(id_group);
 }
 
 function onMouseMove(event) {
@@ -1176,6 +1202,7 @@ document.querySelector("#myFpv_deleteAnEntityBtn").addEventListener("click", fun
 // groupes
 
 document.querySelector("#myFpv_menu-entities-window-manage_groups").addEventListener("click", function() {
+    myFpv_groups_refresh();
     document.getElementById("myFpv-groups-window").style.display = "inline";
 });
 
@@ -1196,14 +1223,22 @@ document.querySelector("#myFpv-groups-window").addEventListener("click", functio
     });
 });
 
+document.querySelector("#myFpv-group-window").addEventListener("click", function() {
+    document.querySelectorAll(".myFpv-group-entities-selections_list-element-delete").forEach(element => {
+        element.addEventListener("click", function() {
+            let id = this.id.replace("myFpv-group-entities-selections_list-element-delete-id-","");
+            myFpv_group_entities_selections_list_element_delete(id);
+        });
+    });
+});
+
 document.querySelector("#myFpv-group-entities-all-btn").addEventListener("click", function() {
     let id = document.getElementById("myFpv-group-entities-all").value;
     let id_group = document.getElementById("myFpv-group-window-id").value;
     let entityO = entietiesT.find(o => o.id.toString() === id.toString());
-    entityO.id_group = id_group;
+    entityO.id_group = id_group
 
     myFpv_group_window(id_group);
-    myFpv_entities_all_select_groups_refresh();
 });
 
 // paramètres
@@ -1235,6 +1270,26 @@ document.querySelector("#myFpv-parameters-groundReset-btn").addEventListener("cl
     });
     plane.material.needsUpdate = true;
     plane.visible = true;
+
+/*
+const planeGeometry = new THREE.PlaneGeometry(250, 250);
+const planeTextureLoader = new THREE.TextureLoader();
+const planeTexture = planeTextureLoader.load("img/200.png");
+planeTexture.wrapS = THREE.RepeatWrapping;
+planeTexture.wrapT = THREE.RepeatWrapping;
+planeTexture.repeat.set(250, 250);
+const planeMaterial = new THREE.MeshLambertMaterial({
+    map: planeTexture,
+    opacity: 1,
+    transparent: true,
+    depthWrite: false, // Désactive l'écriture dans le tampon de profondeur
+    depthTest: true,   // Conserve les tests de profondeur
+    side: THREE.DoubleSide // Assure que la grille est visible de chaque côté
+});
+let plane = new THREE.Mesh(planeGeometry, planeMaterial);
+plane.rotation.x = - Math.PI / 2;
+plane.position.set(1, 0.5, 1);
+*/
 });
 
 document.querySelector("#myFpv-parameters-skyColor-btn").addEventListener("click", function() {

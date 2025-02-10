@@ -124,10 +124,18 @@ canvas {
 }
 
 .myFpv-group-entities-selections_list-element {
+    position: relative;
     margin-bottom: 1px;
     padding: 0.5vh 1vh;
 }
 
 .myFpv-group-entities-selections_list-element:last-child {
     margin-bottom: 0px;
+}
+
+.myFpv-group-entities-selections_list-element-delete {
+    position: absolute;
+    top: 7.5px;
+    right: 7.5px;
+    cursor: pointer;
 }
