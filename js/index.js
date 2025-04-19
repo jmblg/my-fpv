@@ -96,10 +96,20 @@ class Entity {
 
             this.selected_type = "size";
         } else {
-            this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(this.mesh.geometry.parameters.width) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
-            this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(this.mesh.geometry.parameters.height) / 2 + 0.5, this.mesh.position.z);
-            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(this.mesh.geometry.parameters.depth) / 2 + 0.5);
+            let x, y, z;
+            if (this.type == "cube") {
+                x = this.mesh.geometry.parameters.width;
+                y = this.mesh.geometry.parameters.height;
+                z = this.mesh.geometry.parameters.depth;
+            } else if (this.type == "sphere") {
+                x = this.mesh.geometry.parameters.radius;
+                y = this.mesh.geometry.parameters.widthSegments;
+                z = this.mesh.geometry.parameters.heightSegments;
+            }
 
+            this.selectedT.x.position.set(parseInt(this.mesh.position.x) + parseInt(x) / 2 + 0.5, this.mesh.position.y, this.mesh.position.z);
+            this.selectedT.y.position.set(this.mesh.position.x, parseInt(this.mesh.position.y) + parseInt(y) / 2 + 0.5, this.mesh.position.z);
+            this.selectedT.z.position.set(this.mesh.position.x, this.mesh.position.y, parseInt(this.mesh.position.z) + parseInt(z) / 2 + 0.5);
             if (this.selected_type == "size") {
                 this.selected_type = "position";
             } else {
@@ -1070,10 +1080,16 @@ document.querySelector("#myFpv_entities_all_select").addEventListener("change", 
     document.getElementById("myFpv_renameEntity").value = "";
 
     document.getElementById("myFpv_addAnEntity_type").value = entityO.type;
-
-    document.getElementById("myFpv_addAnEntity_sizeX").value = entityO.mesh.geometry.parameters.width;
-    document.getElementById("myFpv_addAnEntity_sizeY").value = entityO.mesh.geometry.parameters.height;
-    document.getElementById("myFpv_addAnEntity_sizeZ").value = entityO.mesh.geometry.parameters.depth;
+    
+    if (entityO.type == "cube") {
+        document.getElementById("myFpv_addAnEntity_sizeX").value = entityO.mesh.geometry.parameters.width;
+        document.getElementById("myFpv_addAnEntity_sizeY").value = entityO.mesh.geometry.parameters.height;
+        document.getElementById("myFpv_addAnEntity_sizeZ").value = entityO.mesh.geometry.parameters.depth;
+    } else if (entityO.type == "sphere") {
+        document.getElementById("myFpv_addAnEntity_sizeX").value = entityO.mesh.geometry.parameters.radius;
+        document.getElementById("myFpv_addAnEntity_sizeY").value = entityO.mesh.geometry.parameters.widthSegments;
+        document.getElementById("myFpv_addAnEntity_sizeZ").value = entityO.mesh.geometry.parameters.heightSegments;
+    }
 
     document.getElementById("myFpv_addAnEntity_positionX").value = entityO.mesh.position.x;
     document.getElementById("myFpv_addAnEntity_positionY").value = entityO.mesh.position.y;
